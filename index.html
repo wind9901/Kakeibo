@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1615" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="記帳">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>記帳</title>
+<style>
+:root {
+  --bg: #f3f1ec; --surface: #ffffff; --surface-2: #f6f4f0; --line: #e7e3db; --line-2: #d9d4ca;
+  --ink: #17201e; --ink-2: #5b6562; --ink-3: #8b9390;
+  --brand: #0f4c5c; --brand-2: #1b6670; --brand-ink: #0f4c5c; --brand-soft: #e1eded;
+  --accent: #e0a43a; --accent-soft: #fbf0db; --accent-ink: #8a5a06;
+  --income: #007a99; --expense: #d65a31; --violet: #6b5bd2; --danger: #c43d2b;
+  --hero-1: #0f4c5c; --hero-2: #1e6d6e;
+  --shadow: 0 1px 2px rgba(23,32,30,.05), 0 6px 20px rgba(23,32,30,.06);
+  --shadow-lg: 0 -8px 40px rgba(23,32,30,.18);
+  --r-lg: 22px; --r: 16px; --r-sm: 12px;
+  --num: ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", system-ui, sans-serif;
+  --t1: #fdecc8; --t2: #dcefe9; --t3: #e4e6fb; --t4: #fde3db; --t5: #e2eef6; --t6: #f1e4f3; --t7: #e9f1dc; --t8: #f4ebe1;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1615; --surface: #172120; --surface-2: #1d2928; --line: #26332f; --line-2: #34433f;
+    --ink: #eaf0ee; --ink-2: #a8b4b1; --ink-3: #78857f;
+    --brand: #5aaab3; --brand-2: #3f8b93; --brand-ink: #8fd0d6; --brand-soft: #1c3436;
+    --accent: #e8b65a; --accent-soft: #3a2f1a; --accent-ink: #f1cd88;
+    --income: #2fb3c4; --expense: #e57a55; --violet: #8a7de6; --danger: #ef6a55;
+    --hero-1: #134652; --hero-2: #17383b;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 -8px 40px rgba(0,0,0,.5);
+    --t1: #3a301b; --t2: #1b3530; --t3: #262a45; --t4: #3d2620; --t5: #1d3040; --t6: #35253a; --t7: #283520; --t8: #362c22;
+  }
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); }
+body { overscroll-behavior-x: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Noto Sans TC", "PingFang TC", "Hiragino Sans", sans-serif;
+  font-size: 15px; line-height: 1.4; padding-bottom: calc(96px + env(safe-area-inset-bottom)); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; color: var(--ink); }
+svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.num { font-family: var(--num); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.hidden { display: none !important; }
+.muted { color: var(--ink-2); } .faint { color: var(--ink-3); }
+.inc { color: var(--income); } .exp { color: var(--expense); }
+
+/* ---------- App bar ---------- */
+.appbar { position: sticky; top: 0; z-index: 20; padding: calc(10px + env(safe-area-inset-top)) 20px 10px;
+  display: flex; align-items: center; justify-content: space-between; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); }
+.appbar h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -.02em; }
+.appbar .sub { font-size: 13px; color: var(--ink-2); margin-bottom: 1px; }
+.appbar .acts { display: flex; gap: 8px; align-items: center; }
+.icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--surface); display: grid; place-items: center;
+  box-shadow: var(--shadow); color: var(--ink); }
+.pill { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 99px; font-size: 12.5px; font-weight: 600;
+  background: var(--surface); box-shadow: var(--shadow); border: 0; color: var(--ink-2); }
+.pill svg.i { width: 16px; height: 16px; }
+.pill.warn { background: var(--accent-soft); color: var(--accent-ink); box-shadow: none; }
+.pill.ok .dot { width: 7px; height: 7px; border-radius: 50%; background: #2bb673; }
+.pill.spin svg { animation: rot 1s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+main { padding: 4px 16px 0; }
+.page { display: none; animation: fade .22s ease; } .page.active { display: block; }
+.chk.batch-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto 30px; gap: 10px; align-items: center; }
+.batch-row .bt-open { border: 0; background: none; text-align: left; padding: 0; font: inherit; color: inherit; min-width: 0; }
+.batch-row .bt-pen { border: 0; background: none; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: var(--ink-3); padding: 0; }
+.batch-row .bt-pen svg.i { width: 16px; height: 16px; }
+.batch-row.editing { background: var(--brand-soft); }
+.batch-row.editing .bt-pen { color: var(--brand-ink); }
+.bt-edit { padding: 12px 14px 14px; background: var(--surface-2); border-left: 3px solid var(--brand); }
+.bt-edit .form-group { background: var(--surface); }
+.l-top { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.l-top .msw { flex: 1; margin: 0; min-width: 0; }
+.l-view { flex: none; width: 116px; }
+.l-view button { padding: 7px 4px; font-size: 13.5px; }
+.cal { padding: 10px 8px 8px; margin-bottom: 12px; }
+.cal-h, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.cal-h { text-align: center; font-size: 11.5px; font-weight: 650; color: var(--ink-3); margin-bottom: 4px; }
+.cal-h .sun { color: var(--expense); } .cal-h .sat { color: var(--income); }
+.cal-d { border: 0; background: none; font: inherit; color: var(--ink); display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 0 4px; border-radius: 10px; min-height: 46px; }
+.cal-d .n { font-size: 14px; font-weight: 600; }
+.cal-d .m { font-size: 9.5px; font-weight: 650; height: 12px; line-height: 12px; color: var(--expense); font-family: var(--num); white-space: nowrap; }
+.cal-d.sun .n { color: var(--expense); } .cal-d.sat .n { color: var(--income); }
+.cal-d.mon1 .n::after { content: attr(data-mo); font-size: 9px; color: var(--ink-3); margin-left: 1px; }
+.cal-d.today { background: var(--brand-soft); } .cal-d.today .n { font-weight: 800; }
+.cal-d.sel { background: var(--brand); } .cal-d.sel .n, .cal-d.sel .m { color: #fff; font-weight: 800; }
+.cal-d.out { visibility: hidden; }
+.cal-d.none { opacity: .45; }
+.tx-group.flash .tx-day { background: var(--brand-soft); border-radius: 10px; transition: background .6s; }
+.page.active.from-r { animation: slideR .24s cubic-bezier(.2,.8,.2,1); } .page.active.from-l { animation: slideL .24s cubic-bezier(.2,.8,.2,1); }
+@keyframes slideR { from { transform: translateX(36px); opacity: .3; } to { transform: none; opacity: 1; } }
+@keyframes slideL { from { transform: translateX(-36px); opacity: .3; } to { transform: none; opacity: 1; } }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Cards ---------- */
+.card { background: var(--surface); border-radius: var(--r-lg); padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+.sec-h { display: flex; justify-content: space-between; align-items: baseline; margin: 22px 4px 10px; }
+.sec-h h2 { font-size: 17px; margin: 0; font-weight: 750; letter-spacing: -.01em; }
+.sec-h a, .link { color: var(--brand-ink); font-size: 13.5px; font-weight: 600; text-decoration: none; background: none; border: 0; padding: 0; }
+.card h3 { margin: 0 0 12px; font-size: 14px; font-weight: 700; color: var(--ink-2); display: flex; justify-content: space-between; align-items: center; }
+
+/* Hero */
+.hero { position: relative; overflow: hidden; border-radius: 26px; padding: 20px 20px 18px; color: #fff;
+  background: linear-gradient(140deg, var(--hero-1) 0%, var(--hero-2) 100%); box-shadow: 0 12px 30px rgba(15,76,92,.28); }
+.hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+.hero::before { width: 220px; height: 220px; right: -70px; top: -90px; background: radial-gradient(circle, rgba(224,164,58,.38), transparent 68%); }
+.hero::after { width: 180px; height: 180px; left: -60px; bottom: -110px; background: radial-gradient(circle, rgba(255,255,255,.12), transparent 70%); }
+.hero .lbl { font-size: 13px; opacity: .78; display: flex; justify-content: space-between; }
+.hero .big { font-size: 38px; font-weight: 800; margin: 2px 0 14px; letter-spacing: -.03em; }
+.hero .big small { font-size: 20px; font-weight: 700; margin-right: 2px; opacity: .9; }
+.hero .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; position: relative; z-index: 1;
+  background: rgba(255,255,255,.1); border-radius: 16px; padding: 10px 12px; }
+.hero .trio div { font-size: 11.5px; opacity: .92; }
+.hero .trio b { display: block; font-size: 15px; font-weight: 700; margin-top: 2px; }
+.hero .cmp { font-size: 12px; background: rgba(255,255,255,.14); padding: 3px 8px; border-radius: 99px; }
+
+/* Quick actions */
+.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 4px; }
+.quick button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); padding: 0; }
+.quick .q { width: 58px; height: 58px; border-radius: 20px; display: grid; place-items: center; background: var(--surface); box-shadow: var(--shadow); color: var(--brand-ink); }
+.quick .q.prim { background: var(--brand); color: #fff; box-shadow: 0 6px 16px rgba(15,76,92,.28); }
+.quick .q svg.i { width: 26px; height: 26px; }
+
+.banner { display: flex; gap: 12px; align-items: center; background: var(--accent-soft); color: var(--accent-ink); border-radius: var(--r);
+  padding: 12px 14px; margin-top: 14px; font-size: 14px; font-weight: 600; border: 0; width: 100%; text-align: left; }
+.banner .em { font-size: 22px; }
+
+/* Accounts scroller */
+.hscroll { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 8px; scrollbar-width: none; scroll-snap-type: x mandatory; scroll-padding: 0 16px; }
+.hscroll::-webkit-scrollbar { display: none; }
+.acc-card { flex: none; width: 150px; scroll-snap-align: start; background: var(--surface); border-radius: var(--r); padding: 13px 14px; box-shadow: var(--shadow); }
+.tagbox { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; min-width: 0; padding: 4px 0; }
+.tagbox .tg { display: inline-flex; align-items: center; gap: 2px; background: var(--brand-soft); color: var(--brand-ink); border-radius: 8px; padding: 3px 4px 3px 9px; font-size: 13.5px; font-weight: 650; }
+.tagbox .tg.def { background: var(--surface-2); color: var(--ink-2); padding-right: 9px; }
+.tagbox .tg button { border: 0; background: none; color: inherit; width: 20px; height: 20px; display: grid; place-items: center; padding: 0; opacity: .7; }
+.tagbox .tg button svg.i { width: 13px; height: 13px; }
+.tagbox input { flex: 0 1 110px; min-width: 70px; border: 0; background: var(--surface-2) !important; border-radius: 8px; padding: 6px 8px !important; font-size: 14px; text-align: left !important; }
+.acc-card[data-acc] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; cursor: pointer; }
+.acc-card.dragging { position: relative; z-index: 20; box-shadow: 0 16px 40px rgba(0,0,0,.22); transition: none; cursor: grabbing; }
+.hscroll.reorder { scroll-snap-type: none; }
+.hscroll.reorder .acc-card:not(.dragging) { transition: transform .15s; }
+.acc-card .t { font-size: 12px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+.acc-card .n { font-weight: 700; font-size: 14px; margin: 3px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-card .b { font-size: 18px; font-weight: 750; }
+.acc-card .s { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+.badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 99px; background: var(--brand-soft); color: var(--brand-ink); }
+.badge.twd { background: var(--accent-soft); color: var(--accent-ink); }
+.badge.pend { background: var(--accent-soft); color: var(--accent-ink); }
+
+/* Transaction list */
+.tx-group { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+.tx-day { display: flex; justify-content: space-between; padding: 12px 16px 4px; font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+.tx { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border: 0; background: none; width: 100%; text-align: left; }
+.tx + .tx { border-top: 1px solid var(--line); }
+.tx:active { background: var(--surface-2); }
+.ico { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; font-size: 21px; flex: none; }
+.tx .mid { flex: 1; min-width: 0; }
+.tx .mid b { display: block; font-weight: 650; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx .mid small { display: block; color: var(--ink-2); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.tx .amt { text-align: right; font-weight: 700; font-size: 15.5px; white-space: nowrap; }
+.tx .amt small { display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 500; }
+.empty { text-align: center; color: var(--ink-3); padding: 36px 16px; font-size: 14px; }
+.empty .em { font-size: 40px; display: block; margin-bottom: 8px; }
+
+/* Month switcher & chips */
+.msw { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border-radius: 99px; padding: 4px; box-shadow: var(--shadow); margin-bottom: 12px; }
+.msw button { width: 38px; height: 38px; border-radius: 50%; border: 0; background: none; display: grid; place-items: center; }
+.msw b { font-size: 16px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line-2); background: transparent; border-radius: 99px; padding: 7px 14px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+.chip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip-sel { flex: none; border: 1px solid var(--line-2); background: transparent; border-radius: 99px; padding: 7px 12px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); -webkit-appearance: none; appearance: none; }
+.sum3 { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; }
+.sum3 div + div { border-left: 1px solid var(--line); }
+.sum3 small { font-size: 12px; color: var(--ink-2); }
+.sum3 b { display: block; font-size: 17px; font-weight: 750; margin-top: 2px; }
+
+/* Segmented */
+.seg { display: flex; background: var(--surface-2); border-radius: 12px; padding: 3px; gap: 2px; }
+.seg button { flex: 1; border: 0; padding: 8px 6px; border-radius: 9px; background: none; color: var(--ink-2); font-size: 14.5px; font-weight: 650; }
+.seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+
+/* ---------- Tab bar ---------- */
+.tabbar { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; height: 66px;
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5); border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,.12); border: 1px solid var(--line); }
+.tabbar button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 650; color: var(--ink-3); padding: 0; height: 100%; justify-content: center; }
+.tabbar button.on { color: var(--brand-ink); }
+.tabbar .fab { width: 56px; height: 56px; border-radius: 20px; margin: -26px auto 0; background: linear-gradient(140deg, var(--hero-1), var(--brand-2)); color: #fff;
+  display: grid; place-items: center; box-shadow: 0 8px 22px rgba(15,76,92,.4); border: 4px solid var(--bg); }
+.tabbar .fab svg.i { width: 26px; height: 26px; stroke-width: 2.1; }
+.tabbar .fab-lbl { margin-top: 1px; color: var(--brand-ink); }
+.tabbar [data-tab=add] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.tabbar .fab.press { transform: scale(.92); transition: transform .15s; }
+/* AI 辨識選單（dock 中間） */
+.ai-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 12px; }
+.ai-grid button { border: 0; border-radius: 18px; background: var(--surface); color: var(--ink); padding: 18px 6px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 700; box-shadow: var(--shadow); position: relative; }
+.ai-grid button svg.i { width: 30px; height: 30px; stroke-width: 1.8; }
+.ai-grid button.hot { background: var(--brand-soft); color: var(--brand-ink); outline: 2px solid var(--brand); }
+.ai-grid .thumb { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 7px; background: center / cover no-repeat var(--surface-2); }
+
+/* ---------- Sheets ---------- */
+.scrim { position: fixed; inset: 0; background: rgba(10,18,17,.42); z-index: 50; opacity: 0; pointer-events: none; transition: opacity .25s; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--bg); border-radius: 26px 26px 0 0; box-shadow: var(--shadow-lg);
+  max-height: calc(100% - 28px - env(safe-area-inset-top)); display: flex; flex-direction: column; transform: translateY(105%); transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+.sheet.on { transform: none; }
+.sheet.tall { height: calc(100% - 28px - env(safe-area-inset-top)); }
+.sheet.z2 { z-index: 70; } .scrim.z2 { z-index: 65; }
+.sheet-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 16px 10px; position: relative; flex: none; }
+.sheet-h::before { content: ""; position: absolute; top: 7px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--line-2); }
+.sheet-h h2 { margin: 14px 0 0; font-size: 18px; font-weight: 750; }
+.sheet-h .x { margin-top: 12px; }
+.sheet-b { overflow-y: auto; padding: 4px 16px calc(20px + env(safe-area-inset-bottom)); flex: 1; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+#e-del { width: auto; flex: 0 0 auto; padding-left: 18px; padding-right: 18px; }
+.sheet-f .btn-row #e-save { flex: 1; }
+.sheet-f { padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); flex: none; background: var(--bg); border-top: 1px solid var(--line); }
+.x { width: 34px; height: 34px; border-radius: 50%; border: 0; background: var(--surface-2); display: grid; place-items: center; color: var(--ink-2); }
+.x svg.i { width: 18px; height: 18px; }
+
+/* Entry */
+.entry-top { display: flex; gap: 10px; align-items: center; margin-top: 14px; width: 100%; }
+.entry-top .seg { flex: 1; }
+.amount-box { background: var(--surface); border-radius: var(--r-lg); padding: 14px 16px 12px; box-shadow: var(--shadow); margin: 6px 0 14px; }
+.amount-row { display: flex; align-items: center; gap: 10px; }
+.cur-btn { flex: none; border: 0; border-radius: 12px; padding: 8px 10px; font-weight: 750; font-size: 14px; background: var(--brand-soft); color: var(--brand-ink); display: flex; gap: 4px; align-items: center; }
+.cur-btn.twd { background: var(--accent-soft); color: var(--accent-ink); }
+.amount-input { flex: 1; min-width: 0; border: 0; background: none; text-align: right; font-size: 40px; font-weight: 800; padding: 0; outline: none;
+  font-family: var(--num); letter-spacing: -.03em; }
+.amount-input::placeholder { color: var(--line-2); }
+.conv { text-align: right; font-size: 13px; color: var(--ink-2); margin-top: 4px; min-height: 18px; }
+.conv b { color: var(--ink); }
+.cat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px 2px; background: var(--surface); border-radius: var(--r-lg); padding: 12px 6px 8px; box-shadow: var(--shadow); margin-bottom: 14px; }
+.cat { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; color: var(--ink-2); padding: 4px 0; }
+.cat .ico { width: 44px; height: 44px; font-size: 21px; border-radius: 15px; transition: transform .15s; border: 2px solid transparent; }
+.cat.on { color: var(--ink); }
+.cat.on .ico { border-color: var(--brand); transform: scale(1.06); }
+.cat span { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 2px; }
+.form-group { background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; }
+.frow { display: flex; align-items: center; gap: 12px; padding: 0 16px; min-height: 52px; }
+.frow + .frow { border-top: 1px solid var(--line); }
+.frow > label { flex: none; width: 74px; font-size: 14px; color: var(--ink-2); font-weight: 600; }
+.frow input, .frow select { flex: 1; min-width: 0; border: 0; background: none; font-size: 16px; padding: 14px 0; outline: none; text-align: right; -webkit-appearance: none; appearance: none; }
+.frow select { direction: rtl; }
+.frow select option { direction: ltr; }
+.frow .trail { flex: none; display: flex; gap: 6px; }
+.mini-btn { border: 0; background: var(--brand-soft); color: var(--brand-ink); border-radius: 10px; padding: 7px 10px; font-size: 13px; font-weight: 700; display: inline-flex; gap: 4px; align-items: center; }
+.mini-btn svg.i { width: 16px; height: 16px; }
+.hint { font-size: 12.5px; color: var(--ink-2); margin: -6px 6px 14px; line-height: 1.5; }
+.items-h { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-weight: 650; font-size: 14px; }
+.item { display: grid; grid-template-columns: 1fr 46px 86px 26px; gap: 6px; padding: 6px 12px; align-items: center; border-top: 1px solid var(--line); }
+.item input { border: 0; background: var(--surface-2); border-radius: 9px; padding: 9px 8px; font-size: 14px; width: 100%; outline: none; min-width: 0; }
+.item input.r { text-align: right; }
+.item .del { border: 0; background: none; color: var(--ink-3); padding: 0; display: grid; place-items: center; }
+.item .del svg.i { width: 18px; height: 18px; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 0; border-radius: 16px; padding: 15px; font-size: 16.5px; font-weight: 750;
+  background: var(--brand); color: #fff; box-shadow: 0 6px 16px rgba(15,76,92,.22); }
+.btn:disabled { opacity: .5; }
+.btn.sec { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.btn.danger { background: transparent; color: var(--danger); box-shadow: none; border: 1.5px solid color-mix(in srgb, var(--danger) 40%, transparent); }
+.btn-row { display: flex; gap: 10px; }
+
+/* Store search */
+.search-box { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 14px; padding: 0 12px; box-shadow: var(--shadow); margin-top: 14px; }
+.search-box input { flex: 1; border: 0; background: none; font-size: 16px; padding: 13px 0; outline: none; min-width: 0; }
+.store-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 0; background: none; width: 100%; text-align: left; }
+.store-item + .store-item { border-top: 1px solid var(--line); }
+.store-item .ico { width: 38px; height: 38px; font-size: 18px; border-radius: 12px; background: var(--brand-soft); color: var(--brand-ink); }
+.store-item b { display: block; font-size: 15px; }
+.store-item small { display: block; color: var(--ink-2); font-size: 12.5px; margin-top: 2px; }
+.store-card { display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-2); }
+.store-card .acts { margin-left: auto; display: flex; gap: 6px; }
+
+/* Detail */
+.det-hero { text-align: center; padding: 10px 0 18px; }
+.det-hero .ico { width: 62px; height: 62px; font-size: 30px; border-radius: 22px; margin: 0 auto 10px; }
+.det-hero .amt { font-size: 34px; font-weight: 800; letter-spacing: -.02em; }
+.det-hero .sub { color: var(--ink-2); font-size: 14px; margin-top: 2px; }
+/* 明細右欄直接編輯 */
+.det-amt { display: flex; align-items: baseline; justify-content: center; gap: 2px; font-size: 34px; font-weight: 800; letter-spacing: -.02em; font-family: var(--num); }
+.det-amt input { font: inherit; color: inherit; letter-spacing: inherit; border: 0; background: transparent; text-align: center; width: 6ch; min-width: 3ch; max-width: 100%; padding: 2px 6px; border-radius: 12px; outline: none; transition: background .15s; }
+.det-amt input:hover { background: var(--surface-2); }
+.det-amt input:focus { background: var(--surface-2); box-shadow: 0 0 0 2px var(--brand-soft); }
+.det-saved { display: inline-block; margin-left: 8px; font-size: 12.5px; font-weight: 650; color: var(--income); opacity: 0; transition: opacity .2s; }
+.det-saved.on { opacity: 1; } .det-saved.bad { color: var(--expense); }
+.det-form .frow input, .det-form .frow select { border-radius: 8px; transition: background .15s; }
+.det-form .frow input:hover, .det-form .frow select:hover { background: var(--surface-2); }
+.det-form .frow input:focus { background: var(--surface-2); }
+.detail-pane .det-form .frow input:hover, .detail-pane .det-form .frow select:hover, .detail-pane .det-form .frow input:focus { background: var(--surface); }
+.kv { display: flex; justify-content: space-between; gap: 12px; padding: 13px 16px; font-size: 14.5px; }
+.kv + .kv { border-top: 1px solid var(--line); }
+.kv span:first-child { color: var(--ink-2); flex: none; }
+.kv span:last-child { text-align: right; font-weight: 600; word-break: break-word; }
+.call-row { display: flex; gap: 10px; padding: 0 16px 14px; }
+.call-row a { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; background: var(--brand-soft); color: var(--brand-ink);
+  border-radius: 12px; padding: 10px; font-weight: 700; font-size: 14px; }
+.call-row a svg.i { width: 18px; height: 18px; }
+
+/* Analysis */
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; overflow: visible; }
+.chart .axis { font-size: 10.5px; fill: var(--ink-3); font-family: var(--num); }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .hit { fill: transparent; }
+.chart .hl { fill: var(--ink); opacity: .05; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 10px; padding: 8px 10px; font-size: 12px; line-height: 1.5;
+  white-space: nowrap; z-index: 2; transform: translate(-50%, -100%); box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+.tip i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); font-weight: 600; margin-bottom: 8px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.legend i.dash { height: 0; border-top: 2px dashed var(--ink-3); border-radius: 0; width: 14px; vertical-align: 3px; }
+.cbar { display: grid; grid-template-columns: 34px 1fr auto; gap: 10px; align-items: center; padding: 7px 0; }
+.cbar .ico { width: 34px; height: 34px; font-size: 17px; border-radius: 11px; }
+.cbar .nm { font-size: 13.5px; font-weight: 650; display: flex; justify-content: space-between; margin-bottom: 5px; }
+.cbar .nm small { color: var(--ink-3); font-weight: 600; }
+.cbar .track { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.cbar .fill { height: 100%; background: var(--expense); border-radius: 0 4px 4px 0; }
+.cbar .v { font-weight: 700; font-size: 14px; text-align: right; min-width: 70px; }
+.cbar .v small { display: block; font-size: 11px; font-weight: 600; }
+.stack-bar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; gap: 2px; margin: 4px 0 12px; background: var(--surface); }
+.stack-bar div { height: 100%; }
+.stat-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+.stat-row + .stat-row { border-top: 1px solid var(--line); }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; }
+
+/* Report */
+.advice { font-size: 14.5px; line-height: 1.75; }
+.advice .h { font-weight: 800; margin: 14px 0 4px; color: var(--brand-ink); font-size: 15px; }
+.advice .h:first-child { margin-top: 0; }
+.rep-h { background: var(--surface-2); border-radius: 14px; padding: 10px 12px; margin-top: 12px; font-size: 13px; color: var(--ink-2); }
+
+/* Settings */
+.set-h { font-size: 13px; color: var(--ink-2); font-weight: 700; margin: 18px 6px 8px; text-transform: uppercase; letter-spacing: .02em; }
+.switch { position: relative; width: 50px; height: 30px; flex: none; }
+.switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.switch span { position: absolute; inset: 0; border-radius: 99px; background: var(--line-2); transition: .2s; }
+.switch span::after { content: ""; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: .2s; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+.switch input:checked + span { background: var(--brand); }
+.switch input:checked + span::after { transform: translateX(20px); }
+/* 開關：避免被 .frow > label 的寬度撐大，圓點才會走到底 */
+.frow > label.switch { width: 50px; }
+/* 日期欄靠右（iOS Safari 的日期欄不吃 text-align） */
+.frow input[type=date] { display: block; min-height: 1.4em; text-align: right; }
+.frow input[type=date]::-webkit-date-and-time-value { text-align: right; margin: 0; }
+.frow input[type=date]::-webkit-datetime-edit { display: inline-flex; justify-content: flex-end; width: 100%; padding: 0; }
+/* ===== 線條圖示 ===== */
+svg.i.ii { width: 1.05em; height: 1.05em; vertical-align: -.17em; stroke-width: 2; margin-right: 1px; }
+svg.i.good { color: var(--income); } svg.i.bad { color: var(--expense); }
+.ico { color: var(--ink); }
+.ico svg.i { width: 21px; height: 21px; stroke-width: 1.7; }
+.cbar .ico svg.i, .dr-row .ico svg.i { width: 18px; height: 18px; }
+.cat .ico svg.i { width: 22px; height: 22px; }
+.store-item .ico svg.i { width: 19px; height: 19px; }
+.det-hero .ico svg.i { width: 30px; height: 30px; stroke-width: 1.5; }
+.empty .em svg.i { width: 38px; height: 38px; stroke-width: 1.4; color: var(--ink-3); }
+.banner .em svg.i { width: 22px; height: 22px; }
+.chip svg.i { width: 15px; height: 15px; margin-right: 4px; vertical-align: -3px; stroke-width: 2; }
+.set-item i svg.i { width: 18px; height: 18px; color: #fff; stroke-width: 2; }
+.acc-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--brand-soft); color: var(--brand-ink); flex: none; }
+.acc-ic svg.i { width: 19px; height: 19px; }
+.rr-st svg.i { width: 19px; height: 19px; }
+.rr.match .rr-st, .rr-st:has(+ .mid) { color: var(--ink-2); }
+.quick .q svg.i { stroke-width: 1.8; }
+.ipick { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 6px; }
+.ipick button { aspect-ratio: 1; border: 1.5px solid transparent; border-radius: 12px; background: var(--surface-2); color: var(--ink-2); display: grid; place-items: center; }
+.ipick button.on { border-color: var(--brand); color: var(--brand-ink); background: var(--brand-soft); }
+.ipick svg.i { width: 20px; height: 20px; stroke-width: 1.7; }
+/* ===== 搜尋 ===== */
+.search-bar { display: flex; align-items: center; gap: 8px; background: var(--surface); border-radius: 14px; padding: 0 6px 0 12px; margin-bottom: 10px; box-shadow: var(--shadow); }
+.search-bar > span svg.i { width: 18px; height: 18px; color: var(--ink-3); display: block; }
+.search-bar input { flex: 1; min-width: 0; border: 0; background: none; outline: none; font-size: 16px; padding: 12px 0; color: var(--ink); -webkit-appearance: none; appearance: none; }
+.search-bar input::-webkit-search-cancel-button { display: none; }
+.search-bar button { border: 0; background: var(--surface-2); width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-2); }
+.search-bar button svg.i { width: 14px; height: 14px; }
+.search-note { font-size: 13px; color: var(--ink-2); margin: -2px 6px 10px; }
+mark.hl { background: var(--accent-soft); color: inherit; border-radius: 3px; padding: 0 1px; }
+.frow .grow { flex: 1; font-size: 15px; }
+.frow .grow small { display: block; color: var(--ink-2); font-size: 12px; }
+
+/* Overlays */
+#toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translate(-50%, 20px); background: var(--ink); color: var(--bg);
+  padding: 11px 16px; border-radius: 14px; font-size: 14px; font-weight: 600; opacity: 0; transition: .25s; pointer-events: none; z-index: 100; max-width: 88%; text-align: center; }
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+#busy { position: fixed; inset: 0; z-index: 90; display: none; place-items: center; background: rgba(10,18,17,.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+#busy.on { display: grid; }
+#busy .box { background: var(--surface); border-radius: 22px; padding: 26px 30px; text-align: center; min-width: 220px; }
+.scan { width: 64px; height: 80px; margin: 0 auto 14px; border-radius: 10px; border: 2.5px solid var(--brand); position: relative; overflow: hidden; }
+.scan::after { content: ""; position: absolute; left: 0; right: 0; height: 3px; background: var(--accent); box-shadow: 0 0 12px var(--accent); animation: scan 1.4s ease-in-out infinite; }
+@keyframes scan { 0%,100% { top: 6%; } 50% { top: 90%; } }
+.spinner { width: 34px; height: 34px; border-radius: 50%; border: 3.5px solid var(--line); border-top-color: var(--brand); margin: 0 auto 12px; animation: rot .9s linear infinite; }
+
+/* ================= 平板 / 電腦 ================= */
+kbd { font-family: var(--num); font-size: 11px; font-weight: 700; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 6px; display: inline-grid; place-items: center;
+  background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line); margin-left: auto; }
+.sidebar { display: none; }
+.wide-only { display: none; }
+@media (prefers-color-scheme: dark) { .btn:not(.sec):not(.danger) { color: #0b1514; } .side-new kbd { color: #0b1514 !important; background: rgba(0,0,0,.12) !important; } }
+#dropZone { position: fixed; inset: 0; z-index: 95; display: none; place-items: center; background: color-mix(in srgb, var(--brand) 22%, transparent); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+#dropZone.on { display: grid; }
+#dropZone > div { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 56px; border-radius: 28px; background: var(--surface); border: 2.5px dashed var(--brand); color: var(--brand-ink); }
+#dropZone svg.i { width: 44px; height: 44px; }
+#dropZone b { font-size: 18px; color: var(--ink); } #dropZone small { color: var(--ink-2); }
+.detail-pane { display: none; }
+.tx.sel { background: var(--brand-soft); }
+
+@media (hover: hover) and (pointer: fine) {
+  .tx:hover, .store-item:hover { background: var(--surface-2); }
+  .tx.sel:hover { background: var(--brand-soft); }
+  .icon-btn:hover, .pill:hover, .quick .q:hover, .chip:hover { filter: brightness(.97); }
+  .btn:hover { filter: brightness(1.06); }
+  .cat:hover .ico { transform: scale(1.06); }
+  .chart svg { cursor: crosshair; }
+}
+
+/* iPad 直向以上：多欄排版、對話框式表單 */
+@media (min-width: 700px) {
+  body { padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  main { padding: 8px 28px 0; max-width: 1180px; margin: 0 auto; }
+  .appbar { padding-left: 28px; padding-right: 28px; }
+  .appbar h1 { font-size: 30px; }
+  .wide-only { display: block; }
+  .home-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .sec-h.first { margin-top: 4px; }
+  .hscroll { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); overflow: visible; margin: 0; padding: 0 0 4px; }
+  .acc-card { width: auto; }
+  .ana-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; align-items: start; }
+  .ana-grid .span2 { grid-column: 1 / -1; }
+  .rep-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .tabbar { left: 50%; right: auto; width: 480px; transform: translateX(-50%); }
+  /* 表單改成置中對話框 */
+  .sheet { left: 50%; right: auto; top: 50%; bottom: auto; width: min(580px, calc(100vw - 48px)); border-radius: 28px;
+    max-height: min(900px, calc(100vh - 48px)); transform: translate(-50%, -47%) scale(.97); opacity: 0; pointer-events: none;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), opacity .2s; }
+  .sheet.on { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
+  .sheet.tall { height: min(900px, calc(100vh - 48px)); }
+  #sh-set { width: min(640px, calc(100vw - 48px)); }
+  .sheet-h::before { display: none; }
+  .sheet-f { border-radius: 0 0 28px 28px; padding-bottom: 14px; }
+  .sheet-b { padding-bottom: 20px; }
+  .cat-grid { grid-template-columns: repeat(6, 1fr); }
+  #toast { bottom: calc(110px + env(safe-area-inset-bottom)); }
+}
+
+/* iPad 橫向 / Mac：側邊欄 + 明細雙欄 */
+@media (min-width: 1000px) {
+  body { padding-left: 252px; padding-bottom: 40px; }
+  .tabbar { display: none; }
+  #toast { bottom: 32px; left: calc(50% + 126px); }
+  .sidebar { display: flex; flex-direction: column; gap: 6px; position: fixed; top: 0; bottom: 0; left: 0; width: 252px; z-index: 40;
+    padding: calc(18px + env(safe-area-inset-top)) 16px 18px; background: var(--surface); border-right: 1px solid var(--line); }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 4px 6px 16px; }
+  .brand img { width: 40px; height: 40px; border-radius: 12px; }
+  .brand b { display: block; font-size: 17px; font-weight: 800; }
+  .brand small { font-size: 12px; color: var(--ink-3); }
+  .side-new { justify-content: flex-start; padding: 12px 14px; font-size: 15px; border-radius: 14px; }
+  .side-new kbd { background: rgba(255,255,255,.18); color: #fff; border-color: transparent; }
+  .side-scan, .side-nav button, .side-link { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; border-radius: 12px;
+    padding: 11px 14px; font-size: 15px; font-weight: 650; color: var(--ink-2); text-align: left; }
+  .side-scan { background: var(--brand-soft); color: var(--brand-ink); margin-bottom: 14px; }
+  .side-nav { display: flex; flex-direction: column; gap: 2px; }
+  .side-nav button.on { background: var(--surface-2); color: var(--ink); }
+  .side-nav button.on svg.i { color: var(--brand-ink); }
+  .side-nav button:hover, .side-link:hover { background: var(--surface-2); }
+  .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+  .drop-hint { display: flex; gap: 10px; font-size: 12px; color: var(--ink-2); background: var(--surface-2); padding: 12px; border-radius: 14px; line-height: 1.55; }
+  .drop-hint svg.i { width: 18px; height: 18px; color: var(--brand-ink); margin-top: 1px; }
+  .drop-hint kbd { margin: 0 1px; height: 18px; min-width: 18px; font-size: 10.5px; }
+  .appbar { padding-top: calc(16px + env(safe-area-inset-top)); }
+  #btnSettings { display: none; }
+  .list-wrap { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 22px; align-items: start; }
+  .detail-pane { display: block; position: sticky; top: 92px; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 14px 16px 16px;
+    max-height: calc(100vh - 112px); overflow-y: auto; }
+  .detail-pane .form-group { box-shadow: none; background: var(--surface-2); }
+  .detail-pane .call-row a { background: var(--surface); }
+  .tx-group, .card { scroll-margin-top: 90px; }
+}
+@media (min-width: 1000px) and (max-width: 1180px) { .list-wrap { grid-template-columns: minmax(0, 1fr) 330px; } }
+
+/* v2.4 拆分 / 出差 / 匯入 */
+.item { grid-template-columns: 36px minmax(0, 1fr) 38px 74px 36px 20px; gap: 5px; }
+.i-cw { position: relative; width: 36px; height: 36px; border-radius: 9px; background: var(--surface-2); display: grid; place-items: center; color: var(--ink-2); }
+.i-cw svg.i { width: 18px; height: 18px; }
+.i-cw .i-c { position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; font-size: 16px; }
+.i-t { height: 36px; border: 0; border-radius: 9px; background: var(--surface-2); color: var(--ink-3); font-size: 11.5px; font-weight: 750; padding: 0; font-family: var(--num); }
+.i-t.on { background: var(--accent-soft); color: var(--accent-ink); }
+/* 稅額按鈕 */
+.tax-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.tax-seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 2px; flex: none; }
+.tax-seg button { border: 0; background: none; font: inherit; font-size: 13px; font-weight: 700; padding: 6px 11px; border-radius: 8px; color: var(--ink-2); }
+.tax-seg button.on { background: var(--surface); color: var(--brand-ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.tax-info { flex: 1; min-width: 140px; text-align: right; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+.tax-info b { color: var(--ink); }
+.tax-info a { color: var(--brand-ink); font-weight: 650; }
+/* 多張收據 */
+.mr { display: grid; grid-template-columns: 24px 38px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 11px 14px; }
+.mr + .mr { border-top: 1px solid var(--line); }
+.mr input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--brand); }
+.mr .ico { width: 38px; height: 38px; border-radius: 11px; }
+.mr .ico svg.i { width: 19px; height: 19px; }
+.mr .nm { min-width: 0; cursor: pointer; }
+.mr .nm b { display: block; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr .nm small { display: block; color: var(--ink-2); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mr .v { font-weight: 750; text-align: right; }
+.mr .v small { display: block; font-weight: 500; font-size: 11px; color: var(--ink-3); }
+.mr.err .nm b { color: var(--expense); }
+.clip-hit { border: 1.5px solid var(--brand); background: var(--brand-soft) !important; }
+.clip-hit .thumb { width: 38px; height: 38px; background: center / cover no-repeat var(--surface-2); border-radius: 9px; flex: none; }
+#clipPill { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); z-index: 70; opacity: 0; pointer-events: none; transition: .25s;
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 8px; border-radius: 16px; border: 0; background: var(--ink); color: var(--bg); font: inherit; font-size: 13.5px; font-weight: 650; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+#clipPill .lbl { white-space: nowrap; }
+#clipPill.on { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+#clipPill .thumb { width: 34px; height: 34px; border-radius: 8px; background: center / cover no-repeat rgba(255,255,255,.15); flex: none; }
+#clipPill .x2 { opacity: .6; padding: 0 2px 0 6px; }
+.split { margin: 4px 12px 12px; padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-ink); font-size: 13.5px; }
+.split-h { display: flex; gap: 6px; align-items: center; font-weight: 750; margin-bottom: 6px; }
+.split-h svg.i { width: 16px; height: 16px; }
+.split-r { display: flex; justify-content: space-between; padding: 3px 0; color: var(--ink); }
+.split-f { font-size: 11.5px; margin-top: 6px; opacity: .85; }
+#e-tripRow.on { background: var(--accent-soft); }
+#e-tripRow.on label, #e-tripRow.on select { color: var(--accent-ink); font-weight: 700; }
+.badge.trip { background: var(--accent-soft); color: var(--accent-ink); }
+.hero-trip { position: relative; z-index: 1; margin-top: 10px; font-size: 12.5px; background: rgba(224,164,58,.22); border-radius: 12px; padding: 7px 12px; }
+.trip-card { display: block; width: 100%; text-align: left; border: 0; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px; }
+.trip-card .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.trip-card b.n { font-size: 16px; }
+.trip-card .d { font-size: 12.5px; color: var(--ink-2); }
+.trip-card .nums { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; background: var(--surface-2); border-radius: 12px; padding: 10px 12px; }
+.trip-card .nums small { display: block; font-size: 11.5px; color: var(--ink-2); }
+.trip-card .nums b { font-size: 15px; }
+.chk { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); }
+.chk input { width: 20px; height: 20px; accent-color: var(--brand); flex: none; }
+.chk .mid { flex: 1; min-width: 0; }
+.chk .mid b { display: block; font-size: 14px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chk .mid small { color: var(--ink-2); font-size: 12px; }
+.map-row { display: grid; grid-template-columns: 1fr 1fr 92px; gap: 8px; align-items: center; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13.5px; }
+.map-row:first-child { border-top: 0; }
+.map-row select { width: 100%; border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px; padding: 7px 6px; font-size: 13px; }
+.map-row .src { font-weight: 650; word-break: break-all; }
+.map-row .src small { display: block; color: var(--ink-3); font-weight: 500; }
+.cal-btn { border: 0; background: var(--brand-soft); color: var(--brand-ink); border-radius: 8px; padding: 4px 9px; font-size: 12px; font-weight: 700; margin-left: 8px; }
+details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; font-size: 14px; color: var(--brand-ink); }
+
+/* v2.5 */
+.msw b small.rng, #l-month small.rng, #a-month small.rng { display: block; font-size: 11.5px; color: var(--ink-3); font-weight: 600; text-align: center; }
+.msw b { text-align: center; line-height: 1.2; }
+.seg .rep-link { }
+.rep-seg { display: flex; }
+@media (min-width: 1000px) { .rep-link, .rep-seg { display: none !important; } }
+.acc-card.tot { background: var(--surface-2); box-shadow: none; }
+.cat-mgr { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; }
+.cat-mgr .cm > svg.i { width: 16px; height: 16px; color: var(--ink-2); }
+.cat-mgr .cm { display: inline-flex; align-items: center; gap: 6px; padding: 6px 6px 6px 10px; border-radius: 99px; background: var(--surface-2); font-size: 13.5px; font-weight: 600; }
+.cat-mgr .cm button { border: 0; background: none; color: var(--ink-3); width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; padding: 0; }
+.cat-mgr .cm button svg.i { width: 14px; height: 14px; }
+.cat.add .ico { background: var(--surface-2) !important; color: var(--ink-3); border: 2px dashed var(--line-2); }
+#e-subChips .chip { padding: 6px 12px; font-size: 13px; }
+#e-fuelGroup .frow span.faint { flex: none; font-size: 13px; }
+/* 汽車 */
+.car-hero { position: relative; border-radius: 26px; overflow: hidden; min-height: 230px; background: #070b12 url(car.jpg) no-repeat right bottom / auto 100%; box-shadow: 0 12px 30px rgba(0,0,0,.28); color: #fff; }
+.car-hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(4,7,12,.88) 0%, rgba(4,7,12,.55) 32%, rgba(4,7,12,0) 55%); }
+.car-hero-in { position: relative; padding: 20px; max-width: 62%; }
+.car-hero .lbl { font-size: 13px; opacity: .75; }
+.car-hero .big { font-size: 34px; font-weight: 800; letter-spacing: -.03em; margin: 2px 0 14px; }
+.car-stats { display: grid; gap: 6px; font-size: 12px; opacity: .92; }
+.car-stats b { font-size: 15px; margin-left: 8px; }
+.car-quick .q { font-size: 24px; }
+.car-quick .q.prim { background: #0b1a33; }
+.fuel-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 13.5px; background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; }
+.fuel-row:first-child { border-top: 0; }
+.fuel-row .d { color: var(--ink-2); font-size: 12.5px; }
+.fuel-row .eff { font-weight: 800; font-size: 15px; text-align: right; }
+.fuel-row .eff small { display: block; font-size: 11px; font-weight: 600; color: var(--ink-3); }
+@media (min-width: 700px) {
+  .car-hero { min-height: 300px; background-size: auto 112%; background-position: right bottom -12px; }
+  .car-hero::before { background: linear-gradient(90deg, rgba(7,11,18,.92) 0%, rgba(7,11,18,.6) 30%, rgba(7,11,18,0) 50%); }
+  .car-hero-in { padding: 28px 30px; }
+  .car-hero .big { font-size: 44px; }
+  .car-stats { grid-template-columns: repeat(3, auto); gap: 24px; justify-content: start; }
+  .car-stats b { display: block; margin: 2px 0 0; font-size: 18px; }
+  .car-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+}
+@media (max-width: 699px) {
+  /* 手機：文字在上、車在下，不互相重疊 */
+  /* 手機：排版不變，切掉車子上方的黑色區塊，高度跟首頁的色塊一樣 */
+  .car-hero { min-height: 0; height: var(--hero-h, 188px); background-size: auto 92%; background-position: right -56px bottom -4px; }
+  .car-hero::before { background: linear-gradient(90deg, rgba(7,11,18,.95) 0%, rgba(7,11,18,.82) 40%, rgba(7,11,18,.25) 66%, rgba(7,11,18,0) 80%); }
+  .car-hero-in { max-width: 100%; padding: 18px 20px; }
+  .car-hero .big { margin-bottom: 8px; }
+  .car-stats { grid-template-columns: repeat(3, auto); gap: 22px; justify-content: start; }
+  .car-stats b { display: block; margin: 2px 0 0; font-size: 16px; }
+}
+#e-dailyRow.off { background: var(--surface-2); }
+#e-dailyRow.off .grow { color: var(--ink-2); }
+.badge.excl { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-2); }
+.tagbox { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; align-items: center; min-width: 0; padding: 4px 0; }
+.tagbox .tg { display: inline-flex; align-items: center; gap: 2px; background: var(--brand-soft); color: var(--brand-ink); border-radius: 8px; padding: 3px 4px 3px 9px; font-size: 13.5px; font-weight: 650; }
+.tagbox .tg.def { background: var(--surface-2); color: var(--ink-2); padding-right: 9px; }
+.tagbox .tg button { border: 0; background: none; color: inherit; width: 20px; height: 20px; display: grid; place-items: center; padding: 0; opacity: .7; }
+.tagbox .tg button svg.i { width: 13px; height: 13px; }
+.tagbox input { flex: 0 1 110px; min-width: 70px; border: 0; background: var(--surface-2) !important; border-radius: 8px; padding: 6px 8px !important; font-size: 14px; text-align: left !important; }
+.acc-card[data-acc] { cursor: pointer; text-align: left; }
+.acc-card[data-acc]:active { transform: scale(.98); }
+.chk.batch-row { align-items: center; }
+.batch-row.dup { opacity: .6; }
+.batch-row .mid select.bc { margin-top: 6px; border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 4px 6px; font-size: 12.5px; max-width: 160px; }
+.batch-row > b { white-space: nowrap; font-size: 14.5px; }
+
+/* ===== v2.8 設定（Apple 風格）===== */
+.set-sheet { overflow: hidden; }
+.set-wrap { position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.set-nav, .set-main { display: flex; flex-direction: column; min-height: 0; }
+.set-nav { flex: 1; }
+.set-nav-h, .set-main-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 18px 18px 8px; flex: none; }
+.set-nav-h h2 { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+.set-main-h h2 { margin: 0; font-size: 17px; font-weight: 750; flex: 1; text-align: center; }
+.set-nav-b, .set-panes { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 4px 16px calc(24px + env(safe-area-inset-bottom)); flex: 1; }
+.set-group { background: var(--surface); border-radius: 14px; overflow: hidden; margin: 14px 0; box-shadow: var(--shadow); }
+.set-item { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; padding: 0 14px; min-height: 48px; font-size: 16px; text-align: left; position: relative; }
+.set-item + .set-item::before { content: ""; position: absolute; top: 0; left: 56px; right: 0; border-top: 1px solid var(--line); }
+.set-item i { width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-style: normal; font-size: 16px; flex: none; }
+.set-item .lbl { flex: 1; font-weight: 500; }
+.set-item .v { color: var(--ink-3); font-size: 14.5px; max-width: 45%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-item .chev { color: var(--ink-3); font-size: 20px; font-weight: 300; }
+.set-item:active { background: var(--surface-2); }
+.set-back { border: 0; background: none; color: var(--brand-ink); font-size: 16px; font-weight: 600; padding: 6px 0; min-width: 70px; text-align: left; }
+.set-pane { display: none; padding-top: 6px; }
+.set-pane.on { display: block; animation: fade .2s ease; }
+.set-pane .form-group, .set-pane .card { box-shadow: var(--shadow); }
+.set-pane .sec-note { font-size: 13px; color: var(--ink-2); margin: 4px 6px 12px; }
+.acc-row { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; padding: 11px 14px; text-align: left; font-size: 15px; }
+.acc-row + .acc-row { border-top: 1px solid var(--line); }
+.acc-row .nm { flex: 1; min-width: 0; }
+.acc-row .nm b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acc-row .nm small { color: var(--ink-3); font-size: 12px; }
+.acc-row .chev { color: var(--ink-3); font-size: 20px; }
+/* 手機：選單 → 推入內容 */
+.set-main { position: absolute; inset: 0; background: var(--bg); transform: translateX(100%); transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+.set-wrap.detail .set-main { transform: none; }
+.set-wrap.detail .set-nav { visibility: hidden; transition: visibility 0s .3s; }
+@media (min-width: 700px) {
+  #sh-set { width: min(960px, calc(100vw - 48px)); height: min(720px, calc(100vh - 48px)); }
+  .set-nav { flex: none; width: 290px; border-right: 1px solid var(--line); background: var(--surface-2); }
+  .set-nav .set-x { display: none; }
+  .set-nav .set-group { box-shadow: none; }
+  .set-item.on { background: var(--brand); color: #fff; }
+  .set-item.on .v, .set-item.on .chev { color: rgba(255,255,255,.75); }
+  .set-item.on + .set-item::before, .set-item.on::before { border-color: transparent; }
+  .set-main { position: relative; flex: 1; transform: none; transition: none; }
+  .set-wrap.detail .set-nav { visibility: visible; }
+  .set-back { visibility: hidden; }
+  .set-main-h h2 { text-align: left; font-size: 22px; }
+  .set-panes { padding: 4px 26px 28px; }
+}
+/* ===== 帳戶明細抽屜（左側滑入）===== */
+.drawer { position: fixed; top: 0; bottom: 0; left: 0; width: 100%; z-index: 56; background: var(--bg); display: flex; flex-direction: column;
+  transform: translateX(-102%); transition: transform .32s cubic-bezier(.2,.8,.2,1); box-shadow: 12px 0 40px rgba(0,0,0,.18); padding-top: env(safe-area-inset-top); }
+.drawer.on { transform: none; }
+#scrim-acc, #scrim-drill { z-index: 55; }
+/* 可點擊的統計列（分析細項） */
+.drill { cursor: pointer; border-radius: 10px; transition: background .15s; -webkit-tap-highlight-color: transparent; }
+.drill:hover { background: var(--surface-2); }
+.drill:active { background: var(--brand-soft); }
+.cbar.drill { grid-template-columns: 34px 1fr auto 10px; margin: 0 -6px; padding: 7px 6px; }
+.stat-row.drill { margin: 0 -6px; padding: 8px 6px; }
+.drill .chev, .cbar .chev { color: var(--ink-3); font-size: 18px; line-height: 1; }
+.dr-head { text-align: center; padding: 6px 0 12px; }
+.dr-head small { display: block; color: var(--ink-2); font-size: 12.5px; }
+.dr-head b { display: block; font-size: 30px; font-weight: 800; margin-top: 2px; }
+.dr-row { display: grid; grid-template-columns: 34px 1fr auto 12px; gap: 10px; align-items: center; width: 100%; padding: 11px 14px; background: none; border: 0; text-align: left; font: inherit; color: inherit; }
+.dr-row + .dr-row { border-top: 1px solid var(--line); }
+.dr-row .ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 17px; }
+.dr-row .nm b { display: block; font-weight: 650; }
+.dr-row .nm small { color: var(--ink-2); font-size: 12px; }
+.dr-row .track { height: 5px; border-radius: 3px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
+.dr-row .fill { height: 100%; background: var(--brand); border-radius: 3px; }
+.dr-row .v { font-weight: 700; text-align: right; }
+.dr-row .v small { display: block; color: var(--ink-3); font-weight: 500; font-size: 11.5px; }
+/* 信用卡額度 */
+.limit-bar { height: 8px; border-radius: 4px; background: var(--surface-2); overflow: hidden; margin: 8px 0 6px; }
+.limit-bar div { height: 100%; background: var(--brand); border-radius: 4px; }
+.limit-bar.warn div { background: var(--expense); }
+.acc-card .lim { font-size: 11px; color: var(--ink-3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tx .amt small.twd { color: var(--ink-3); }
+.badge.inst { background: var(--accent-soft); color: var(--accent-ink); }
+.drawer-h { padding: 12px 16px 8px; }
+.drawer-h::before { display: none; }
+.drawer-h h2 { margin: 0 !important; flex: 1; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drawer-h .x { margin-top: 0 !important; }
+@media (min-width: 700px) { .drawer { width: 500px; border-radius: 0 24px 24px 0; } }
+.rec-row { padding: 11px 14px; border-top: 1px solid var(--line); }
+.rec-row:first-child { border-top: 0; }
+.rr-top { display: flex; gap: 10px; align-items: flex-start; }
+.rr-top .mid { flex: 1; min-width: 0; }
+.rr-top .mid b { display: block; font-size: 14.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rr-top .mid small { color: var(--ink-2); font-size: 12px; }
+.rr-top > b { white-space: nowrap; }
+.rr-st { width: 22px; flex: none; text-align: center; }
+.rr-bot { display: flex; gap: 8px; margin: 8px 0 0 32px; flex-wrap: wrap; }
+.rr-bot select { border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px; padding: 6px 8px; font-size: 13px; }
+.rec-row.match { opacity: .72; }
+.rec-foot { position: sticky; bottom: 0; padding: 12px 0 4px; background: linear-gradient(transparent, var(--bg) 30%); }
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <div class="brand"><img src="icon-192.png" alt=""><div><b>AI 記帳</b><small id="sideSub">日圓・台幣</small></div></div>
+  <button class="btn side-new" data-act="new"><span data-icon="plus"></span>記一筆<kbd>N</kbd></button>
+  <button class="side-scan" data-act="scan"><span data-icon="camera"></span><span class="scan-lbl">AI 辨識</span><kbd>R</kbd></button>
+  <nav class="side-nav">
+    <button class="on" data-tab="home"><span data-icon="home"></span>首頁<kbd>1</kbd></button>
+    <button data-tab="list"><span data-icon="list"></span>明細<kbd>2</kbd></button>
+    <button data-tab="ana"><span data-icon="chart"></span>分析<kbd>3</kbd></button>
+    <button data-tab="rep"><span data-icon="sparkles"></span>報告<kbd>4</kbd></button>
+    <button data-tab="car"><span data-icon="car"></span>汽車<kbd>5</kbd></button>
+  </nav>
+  <div class="side-foot">
+    <div class="drop-hint"><span data-icon="camera"></span><span>收據、網購截圖、IC 卡履歷或 PDF 可以直接<b>拖曳</b>到視窗，或按 <kbd>⌘</kbd><kbd>V</kbd> 貼上</span></div>
+    <button class="side-link" data-act="settings"><span data-icon="gear"></span>設定</button>
+  </div>
+</aside>
+
+<header class="appbar">
+  <div>
+    <div class="sub" id="hdrSub"></div>
+    <h1 id="hdrTitle">首頁</h1>
+  </div>
+  <div class="acts">
+    <button class="pill" id="syncPill"></button>
+    <button class="icon-btn" id="btnSearch" aria-label="搜尋" data-icon="search"></button>
+    <button class="icon-btn" id="btnSettings" aria-label="設定" data-icon="gear"></button>
+  </div>
+</header>
+
+<main>
+  <!-- ===== 首頁 ===== -->
+  <section class="page active" id="pg-home">
+   <div class="home-grid">
+    <div class="col-a">
+    <div class="hero">
+      <div class="lbl"><span id="h-month"></span><span class="cmp" id="h-cmp"></span></div>
+      <div class="big num" id="h-exp"></div>
+      <div class="trio">
+        <div>收入<b class="num" id="h-inc"></b></div>
+        <div>結餘<b class="num" id="h-net"></b></div>
+        <div>淨資產<b class="num" id="h-asset"></b></div>
+      </div>
+      <div class="hero-trip hidden" id="h-trip"></div>
+    </div>
+    <div class="quick">
+      <button data-q="scan"><div class="q prim" data-icon="camera"></div>AI 辨識</button>
+      <button data-q="manual"><div class="q" data-icon="pencil"></div>手動記帳</button>
+      <button data-q="atm"><div class="q" data-icon="cash"></div>提款</button>
+      <button data-q="card"><div class="q" data-icon="card"></div>繳卡費</button>
+    </div>
+    <div id="draftBanner"></div>
+    <div class="card wide-only" id="h-catCard" style="margin-top:18px"><h3>本月花在哪 <button class="link" data-goto="ana">分析</button></h3><div id="h-cats"></div></div>
+    </div>
+    <div class="col-b">
+    <div class="sec-h first"><h2>帳戶</h2><span><button class="link" id="lnkAccAdd">＋ 新增</button>　<button class="link" id="lnkAccMgr">管理</button></span></div>
+    <div class="chips" id="accTabs" style="margin-bottom:10px"></div>
+    <div class="hscroll" id="accScroll"></div>
+    <div class="sec-h"><h2>最近紀錄</h2><button class="link" data-goto="list">查看全部</button></div>
+    <div id="recent"></div>
+    </div>
+   </div>
+  </section>
+
+  <!-- ===== 明細 ===== -->
+  <section class="page" id="pg-list">
+   <div class="list-wrap">
+    <div class="list-main">
+    <div class="search-bar"><span data-icon="search"></span><input id="l-q" type="search" placeholder="搜尋店家、品項、備註、分類、金額…" autocomplete="off" enterkeyhint="search"><button id="l-qx" class="hidden" data-icon="x" aria-label="清除"></button></div>
+    <div class="l-top" id="l-top"><div class="msw" id="l-msw"><button data-mv="-1" data-icon="chevL"></button><b id="l-month"></b><button data-mv="1" data-icon="chevR"></button></div>
+      <div class="seg l-view" id="l-view"><button class="on" data-lv="list">列表</button><button data-lv="cal">月曆</button></div></div>
+    <div class="card cal hidden" id="l-cal"></div>
+    <div class="chips" id="l-chips">
+      <button class="chip on" data-f="全部">全部</button><button class="chip" data-f="支出">支出</button>
+      <button class="chip" data-f="收入">收入</button><button class="chip" data-f="振替">振替</button><button class="chip" data-f="出差" data-icon="plane">出差</button><button class="chip" data-f="不計入" data-icon="ban">不計入</button>
+      <select class="chip-sel" id="l-acc"></select>
+    </div>
+    <div class="card sum3">
+      <div><small>收入</small><b class="num inc" id="l-in"></b></div>
+      <div><small>支出</small><b class="num exp" id="l-out"></b></div>
+      <div><small>結餘</small><b class="num" id="l-net"></b></div>
+    </div>
+    <div class="hint hidden" id="l-tripNote" style="margin:-4px 8px 12px"></div>
+    <div id="l-list"></div>
+    </div>
+    <aside class="detail-pane" id="l-pane"><div class="empty"><span class="em" data-icon="receipt"></span>選擇一筆紀錄查看詳情</div></aside>
+   </div>
+  </section>
+
+  <!-- ===== 分析 ===== -->
+  <section class="page" id="pg-ana">
+    <div class="seg" id="a-seg" style="margin-bottom:12px"><button class="on" data-a="daily">日常開銷</button><button data-a="trip">出差</button><button data-a="rep" class="rep-link">AI 報告</button></div>
+    <div id="a-trips" class="hidden"></div>
+    <div id="a-daily">
+    <div class="msw"><button data-amv="-1" data-icon="chevL"></button><b id="a-month"></b><button data-amv="1" data-icon="chevR"></button></div>
+    <div class="ana-grid">
+    <div class="card span2">
+      <h3>收支趨勢 <span class="faint" style="font-weight:600;font-size:12px">近 12 個月</span></h3>
+      <div class="legend"><span><i style="background:var(--income)"></i>收入</span><span><i style="background:var(--expense)"></i>支出</span></div>
+      <div class="chart" id="ch-month"></div>
+    </div>
+    <div class="card">
+      <h3>累積支出</h3>
+      <div class="legend"><span><i style="background:var(--expense)"></i>本月</span><span><i class="dash"></i>上月</span></div>
+      <div class="chart" id="ch-cum"></div>
+    </div>
+    <div class="card">
+      <h3>支付方式</h3>
+      <div id="a-pay"></div>
+      <div class="legend" style="margin-top:6px"><span><i style="background:var(--income)"></i>信用卡</span><span><i style="background:var(--expense)"></i>現金</span><span><i style="background:var(--violet)"></i>電子錢包・銀行</span></div>
+      <div class="chart" id="ch-pay"></div>
+    </div>
+    <div class="card" id="a-twdCard">
+      <h3>台幣消費</h3>
+      <div id="a-twd"></div>
+    </div>
+    <div class="card">
+      <h3>分類支出</h3>
+      <div id="a-cats"></div>
+    </div>
+    <div class="card">
+      <h3>常去店家</h3>
+      <div id="a-stores"></div>
+    </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 汽車 ===== -->
+  <section class="page" id="pg-car">
+    <div class="car-hero">
+      <div class="car-hero-in">
+        <div class="lbl" id="c-lbl">本月汽車支出</div>
+        <div class="big num" id="c-month"></div>
+        <div class="car-stats">
+          <div>今年<b class="num" id="c-year"></b></div>
+          <div>平均油耗<b class="num" id="c-eff"></b></div>
+          <div>最近油價<b class="num" id="c-price"></b></div>
+        </div>
+      </div>
+    </div>
+    <div class="quick car-quick">
+      <button data-car="加油"><div class="q prim" data-icon="fuel"></div>加油</button>
+      <button data-car="過路費"><div class="q" data-icon="road"></div>過路費</button>
+      <button data-car="停車費"><div class="q" data-icon="parking"></div>停車</button>
+      <button data-car=""><div class="q" data-icon="wrench"></div>其他</button>
+    </div>
+    <div class="car-grid">
+      <div>
+        <div class="card"><h3>油耗趨勢 <span class="faint" style="font-size:12px;font-weight:600">km/L</span></h3><div class="chart" id="ch-eff"></div><div class="hint" style="margin:8px 0 0" id="c-effHint"></div></div>
+        <div class="card"><h3>油價趨勢 <span class="faint" style="font-size:12px;font-weight:600">¥/L</span></h3><div class="chart" id="ch-price"></div></div>
+      </div>
+      <div>
+        <div class="card"><h3>花費分類 <span class="seg" id="c-range" style="width:auto;padding:2px"><button class="on" data-r="year">今年</button><button data-r="all">全部</button></span></h3><div id="c-cats"></div></div>
+        <div class="card" style="padding:4px 0"><h3 style="padding:12px 16px 0">加油紀錄</h3><div id="c-fuel"></div></div>
+      </div>
+    </div>
+    <div class="sec-h"><h2>汽車相關紀錄</h2></div>
+    <div id="c-list"></div>
+  </section>
+
+  <!-- ===== 報告 ===== -->
+  <section class="page" id="pg-rep">
+    <div class="seg rep-seg" style="margin-bottom:12px"><button data-goana="daily">日常開銷</button><button data-goana="trip">出差</button><button class="on">AI 報告</button></div>
+   <div class="rep-grid">
+    <div>
+    <div class="card">
+      <div class="seg" id="r-seg"><button class="on" data-r="week">週報</button><button data-r="month">月報</button></div>
+      <div class="msw" style="margin:12px 0 0;box-shadow:none;background:var(--surface-2)"><button data-rmv="-1" data-icon="chevL"></button><b id="r-period" style="font-size:14.5px"></b><button data-rmv="1" data-icon="chevR"></button></div>
+      <div id="r-local" style="margin-top:14px"></div>
+      <button class="btn" id="r-gen" style="margin-top:14px"><span data-icon="sparkles"></span>AI 分析與省錢建議</button>
+    </div>
+    <div id="r-out"></div>
+    </div>
+    <div>
+    <div class="sec-h first"><h2>歷史報告</h2></div>
+    <div id="r-hist"></div>
+    </div>
+   </div>
+  </section>
+</main>
+
+<nav class="tabbar" id="tabbar">
+  <button class="on" data-tab="home"><span data-icon="home"></span>首頁</button>
+  <button data-tab="list"><span data-icon="list"></span>明細</button>
+  <button data-tab="add" aria-label="AI 辨識（長按：手動記帳）"><div class="fab" data-icon="camera"></div><span class="fab-lbl">AI 辨識</span></button>
+  <button data-tab="car"><span data-icon="car"></span>汽車</button>
+  <button data-tab="ana"><span data-icon="chart"></span>分析</button>
+</nav>
+
+<!-- ===== 記帳 Sheet ===== -->
+<div class="scrim" id="scrim-entry"></div>
+<div class="sheet tall" id="sh-entry">
+  <div class="sheet-h">
+    <div class="entry-top">
+      <button class="x" data-close="entry" data-icon="x"></button>
+      <div class="seg" id="e-type"><button class="on" data-t="支出">支出</button><button data-t="收入">收入</button><button data-t="振替">振替</button></div>
+      <button class="x" id="e-cam" data-icon="camera" aria-label="拍收據"></button>
+    </div>
+  </div>
+  <div class="sheet-b" id="e-body">
+    <div class="amount-box">
+      <div class="amount-row">
+        <button class="cur-btn" id="e-cur">¥ JPY</button>
+        <input class="amount-input" id="e-amount" type="text" inputmode="decimal" placeholder="0" autocomplete="off">
+      </div>
+      <div class="conv" id="e-conv"></div>
+      <div class="tax-row" id="e-taxRow"><div class="tax-seg" id="e-tax"><button type="button" class="on" data-tx="in">税込</button><button type="button" data-tx="10">+10%</button><button type="button" data-tx="8">+8%</button></div><span class="tax-info" id="e-taxInfo"></span></div>
+    </div>
+    <div class="cat-grid" id="e-cats"></div>
+    <div class="form-group">
+      <div class="frow"><label>日期</label><input type="date" id="e-date"></div>
+      <div class="frow hidden" id="e-subChipsRow" style="padding:10px 12px"><div class="chips" id="e-subChips" style="margin:0;flex-wrap:wrap"></div></div>
+      <div class="frow" id="e-subRow"><label>子分類</label><select id="e-subSel"></select><input id="e-sub" type="hidden"></div>
+      <div class="frow"><label id="e-accLbl">付款</label><select id="e-acc"></select></div>
+      <div class="frow" id="e-toRow"><label>轉入</label><select id="e-to"></select></div>
+      <div class="frow" id="e-toAmtRow"><label>轉入金額</label><input id="e-toAmt" type="text" inputmode="decimal" placeholder="依匯率自動換算"></div>
+    </div>
+    <div class="form-group hidden" id="e-fuelGroup">
+      <div class="items-h" style="padding-bottom:4px"><span>加油紀錄</span><span class="faint num" id="e-fuelCalc"></span></div>
+      <div class="frow"><label>油價</label><input id="e-unit" type="text" inputmode="decimal" placeholder="每公升 ¥"><span class="faint">¥/L</span></div>
+      <div class="frow"><label>加油量</label><input id="e-liters" type="text" inputmode="decimal" placeholder="公升"><span class="faint">L</span></div>
+      <div class="frow"><label>里程</label><input id="e-odo" type="text" inputmode="numeric" placeholder="加油時的總里程"><span class="faint">km</span></div>
+    </div>
+    <div class="hint" id="e-tHint"></div>
+    <div class="form-group hidden" id="e-instGroup">
+      <div class="frow" id="e-instRow"><div class="grow">分期付款<small id="e-instHint">一次付清</small></div>
+        <select id="e-inst" style="width:auto;flex:none"><option value="0">一次付清</option></select></div>
+    </div>
+    <div class="form-group" id="e-tripGroup">
+      <div class="frow" id="e-dailyRow"><div class="grow">計入日常開銷<small id="e-dailyHint">算進本月支出、圖表與省錢建議</small></div><label class="switch"><input type="checkbox" id="e-daily" checked><span></span></label></div>
+      <div class="frow" id="e-tripRow"><div class="grow">出差<small>另計，不算日常開銷</small></div><label class="switch"><input type="checkbox" id="e-trip"><span></span></label></div>
+    </div>
+    <div class="hint hidden" id="e-tripHint">出差的花費與報銷另外統計，不會算進日常開銷與省錢建議。</div>
+    <div class="form-group" id="e-storeGroup">
+      <div class="frow"><label>店家</label><input id="e-store" placeholder="輸入或查詢" autocomplete="off">
+        <div class="trail"><button class="mini-btn" id="e-storeSearch"><span data-icon="search"></span>查詢</button></div></div>
+      <div id="e-storeExtra" class="hidden">
+        <div class="frow"><label>地址</label><input id="e-addr" placeholder="選填"></div>
+        <div class="frow"><label>電話</label><input id="e-phone" type="tel" placeholder="選填"></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="frow"><label>備註</label><input id="e-note" placeholder="選填"></div>
+    </div>
+    <div class="form-group" id="e-itemsGroup">
+      <div class="items-h"><span>品項明細 <span class="faint num" id="e-itemSum"></span></span><button class="mini-btn" id="e-addItem"><span data-icon="plus"></span>品項</button></div>
+      <div id="e-items"></div>
+      <div id="e-split" class="split hidden"></div>
+    </div>
+  </div>
+  <div class="sheet-f"><div class="btn-row" style="margin:0"><button class="btn danger hidden" id="e-del" aria-label="刪除"><span data-icon="trash"></span>刪除</button><button class="btn" id="e-save"><span data-icon="check"></span>儲存</button></div></div>
+</div>
+<input id="f-cam" type="file" accept="image/*" capture="environment" class="hidden">
+<input id="f-stmt" type="file" accept=".csv,text/csv,application/pdf,image/*" class="hidden">
+<input id="f-pick" type="file" accept="image/*,application/pdf" multiple class="hidden">
+<div id="dropZone"><div><span data-icon="camera"></span><b>放開以 AI 辨識</b><small>收據・網購截圖・明細・IC 卡履歷・PDF</small></div></div>
+
+<!-- ===== 店家查詢 Sheet ===== -->
+<div class="scrim z2" id="scrim-store"></div>
+<div class="sheet tall z2" id="sh-store">
+  <div class="sheet-h"><h2>查詢店家</h2><button class="x" data-close="store" data-icon="x"></button></div>
+  <div class="sheet-b">
+    <div class="search-box"><span data-icon="search" class="faint"></span><input id="s-q" placeholder="店名，例：ローソン 新宿" autocomplete="off" enterkeyhint="search"></div>
+    <div class="frow" style="padding:6px 4px;min-height:44px">
+      <div class="grow" style="font-size:14px"><span data-icon="pin" style="vertical-align:-5px;color:var(--brand-ink)"></span> 優先搜尋目前位置附近</div>
+      <label class="switch"><input type="checkbox" id="s-near" checked><span></span></label>
+    </div>
+    <div id="s-results"></div>
+  </div>
+</div>
+
+<!-- ===== 明細 Sheet ===== -->
+<div class="scrim" id="scrim-detail"></div>
+<div class="sheet" id="sh-detail">
+  <div class="sheet-h"><h2></h2><button class="x" data-close="detail" data-icon="x"></button></div>
+  <div class="sheet-b" id="d-body"></div>
+</div>
+
+<!-- ===== 設定 Sheet ===== -->
+<div class="scrim" id="scrim-set"></div>
+<div class="sheet tall set-sheet" id="sh-set">
+  <div class="set-wrap" id="set-wrap">
+    <aside class="set-nav">
+      <div class="set-nav-h"><h2>設定</h2><button class="x set-x" data-close="set" data-icon="x"></button></div>
+      <div class="set-nav-b"><div class="set-group"><button class="set-item" data-pane="conn"><i style="background:#34c759" data-icon="cloud"></i><span class="lbl">連線與同步</span><span class="v" id="nv-conn"></span><span class="chev">›</span></button><button class="set-item" data-pane="ai"><i style="background:#5e5ce6" data-icon="sparkles"></i><span class="lbl">AI 辨識</span><span class="v" id="nv-ai"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="acc"><i style="background:#0a84ff" data-icon="bank"></i><span class="lbl">帳戶</span><span class="v" id="nv-acc"></span><span class="chev">›</span></button><button class="set-item" data-pane="cat"><i style="background:#ff9f0a" data-icon="tag"></i><span class="lbl">記帳分類</span><span class="v" id="nv-cat"></span><span class="chev">›</span></button><button class="set-item" data-pane="period"><i style="background:#ff375f" data-icon="calendar"></i><span class="lbl">記帳區間</span><span class="v" id="nv-period"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="import"><i style="background:#30b0c7" data-icon="download"></i><span class="lbl">匯入資料</span><span class="v" id="nv-import"></span><span class="chev">›</span></button><button class="set-item" data-pane="offline"><i style="background:#8e8e93" data-icon="cloudOff"></i><span class="lbl">離線</span><span class="v" id="nv-offline"></span><span class="chev">›</span></button><button class="set-item" data-pane="about"><i style="background:#64748b" data-icon="info"></i><span class="lbl">其他</span><span class="v" id="nv-about"></span><span class="chev">›</span></button></div>
+        <div class="hint" style="text-align:center;margin:18px 0 0">AI 記帳 v3.9</div>
+      </div>
+    </aside>
+    <section class="set-main">
+      <div class="set-main-h"><button class="set-back" id="set-back">‹ 設定</button><h2 id="set-title"></h2><button class="x set-x" data-close="set" data-icon="x"></button></div>
+      <div class="set-panes" id="set-panes">
+<div class="set-pane" data-pane="conn">
+    <div class="form-group">
+      <div class="frow"><label>API 網址</label><input id="c-url" placeholder="https://script.google.com/…/exec" autocomplete="off"></div>
+      <div class="frow"><label>連線碼</label><input id="c-token" placeholder="試算表選單「顯示連線碼」" autocomplete="off"></div>
+    </div>
+    <div class="btn-row"><button class="btn sec" id="c-test">測試並同步</button></div>
+    <div class="hint" style="margin-top:8px" id="c-state"></div>
+
+</div>
+<div class="set-pane" data-pane="ai">
+    <div class="form-group">
+      <div class="frow"><label>服務</label><select id="ai-prov"><option value="gemini">Google Gemini</option><option value="claude">Anthropic Claude</option></select></div>
+      <div class="frow"><label>API Key</label><input id="ai-key" type="password" placeholder="已設定則留空"></div>
+      <div class="frow"><label>模型</label><input id="ai-model" placeholder="留空＝自動選擇（建議）"></div>
+      <div class="frow"><label>地圖 Key</label><input id="ai-places" type="password" placeholder="選填：Google Places"></div>
+    </div>
+    <div class="hint" id="ai-state"></div>
+    <div class="form-group">
+      <div class="frow"><div class="grow">自動寄送報告<small>每週一寄週報、每月 1 日寄月報到 Gmail</small></div><label class="switch"><input type="checkbox" id="ai-email"><span></span></label></div>
+    </div>
+    <div class="btn-row"><button class="btn sec" id="ai-test">測試 AI</button><button class="btn" id="ai-save">儲存並測試</button></div>
+
+</div>
+<div class="set-pane" data-pane="acc">
+    <div class="chips" id="accMgrTabs"></div>
+    <div class="form-group" id="acc-list"></div>
+    <div class="set-h">收據辨識</div>
+    <div class="form-group"><div class="frow"><label>沒對應到時</label><select id="acc-defPay"></select></div></div>
+    <div class="sec-note">AI 辨識收據時，會先比對卡號末 4 碼，再比對付款方式關鍵字（例：楽天ペイ → 楽天カード、PayPay → PayPay 卡）；都沒有對應到時，就記到這個帳戶。卡號與關鍵字在各帳戶的編輯畫面設定。</div>
+    <div class="btn-row" style="margin-bottom:6px"><button class="btn sec" id="acc-new">＋ 新增帳戶</button><button class="btn sec" id="tag-new">＋ 新增標籤</button></div>
+</div>
+<div class="set-pane" data-pane="cat">
+    <div class="seg" id="catMgrSeg" style="margin-bottom:10px"><button class="on" data-ct="支出">支出</button><button data-ct="收入">收入</button><button data-ct="振替">振替</button></div>
+    <div class="form-group" id="catMgr"></div>
+    <div class="form-group">
+      <div class="frow"><input id="nc-name" placeholder="新分類名稱" style="text-align:left"><button class="mini-btn" id="nc-add">新增</button></div>
+      <div id="nc-pick" style="padding:4px 10px 12px"></div>
+    </div>
+
+
+</div>
+<div class="set-pane" data-pane="period">
+    <div class="form-group">
+      <div class="frow"><div class="grow">每月起始日<small id="ms-hint">例：選 20 日 → 11月 = 10/20～11/19</small></div><select id="ms-day" style="flex:none;width:90px"></select></div>
+    </div>
+</div>
+<div class="set-pane" data-pane="import">
+    <div class="form-group">
+      <div class="frow"><div class="grow">Money Forward ME<small>匯入「入出金明細」CSV。重複匯入不會產生重複資料</small></div><button class="mini-btn" id="mf-btn">選擇 CSV</button></div>
+    </div>
+    <div class="form-group">
+      <div class="frow"><div class="grow">信用卡明細比對<small>CSV・PDF・截圖。跟現有紀錄比對，重複的略過、漏記的補上</small></div><button class="mini-btn" id="rec-btn">選擇檔案</button></div>
+    </div>
+    <input type="file" id="mf-file" accept=".csv,text/csv" class="hidden">
+</div>
+<div class="set-pane" data-pane="offline">
+    <div class="form-group">
+      <div class="frow"><div class="grow">離線時暫存收據<small>照片暫存在 App 內（不進相簿），連線辨識後立即刪除</small></div><label class="switch"><input type="checkbox" id="p-queue"><span></span></label></div>
+    </div>
+
+</div>
+<div class="set-pane" data-pane="about">
+    <div class="btn-row" style="margin-bottom:10px"><button class="btn sec" id="o-sheet">打開試算表</button><button class="btn sec" id="o-sync">立即同步</button></div>
+    <button class="btn danger" id="o-reset">清除這支手機上的資料</button>
+    <div class="hint" style="margin-top:14px;text-align:center">AI 記帳 v2・資料以 Google 試算表為準</div>
+</div>
+        <div class="set-pane" data-pane="dyn" id="set-dyn"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ===== 帳戶明細（從左側滑入）===== -->
+<div class="scrim" id="scrim-acc"></div>
+<div class="drawer" id="sh-acc">
+  <div class="sheet-h drawer-h"><button class="x" data-close="acc" data-icon="chevL"></button><h2></h2><button class="mini-btn" id="acc-edit">編輯</button></div>
+  <div class="sheet-b" id="acc-body"></div>
+</div>
+
+<!-- ===== 分析細項（從左側滑入）===== -->
+<div class="scrim" id="scrim-drill"></div>
+<div class="drawer" id="sh-drill">
+  <div class="sheet-h drawer-h"><button class="x" id="drill-back" data-icon="chevL"></button><h2></h2></div>
+  <div class="sheet-b" id="drill-body"></div>
+</div>
+
+<button id="clipPill"><span class="thumb"></span><span class="lbl">剪貼簿有截圖・貼上辨識</span><span class="x2" data-icon="x"></span></button>
+<div id="toast"></div>
+<div id="busy"><div class="box"><div id="busyIcon"></div><b id="busyText">處理中…</b><div class="hint" id="busySub" style="margin:6px 0 0"></div></div></div>
+
+<script src="app.js"></script>
+</body>
+</html>
