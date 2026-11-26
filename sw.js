@@ -1,5 +1,5 @@
 // 離線快取：App 本體快取在手機上，沒有網路也能開啟
-const VERSION = 'kakeibo-v4.2.0';
+const VERSION = 'kakeibo-v4.2.1';
 const SHELL = ['./', './index.html', './app.js', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png', './car.jpg'];
 
 self.addEventListener('install', e => {
