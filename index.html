@@ -28,7 +28,7 @@
   --t1: #fdecc8; --t2: #dcefe9; --t3: #e4e6fb; --t4: #fde3db; --t5: #e2eef6; --t6: #f1e4f3; --t7: #e9f1dc; --t8: #f4ebe1;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-mode="light"]) {
     --bg: #0e1615; --surface: #172120; --surface-2: #1d2928; --line: #26332f; --line-2: #34433f;
     --ink: #eaf0ee; --ink-2: #a8b4b1; --ink-3: #78857f;
     --brand: #5aaab3; --brand-2: #3f8b93; --brand-ink: #8fd0d6; --brand-soft: #1c3436;
@@ -39,6 +39,58 @@
     --t1: #3a301b; --t2: #1b3530; --t3: #262a45; --t4: #3d2620; --t5: #1d3040; --t6: #35253a; --t7: #283520; --t8: #362c22;
   }
 }
+:root[data-mode="dark"] {
+    --bg: #0e1615; --surface: #172120; --surface-2: #1d2928; --line: #26332f; --line-2: #34433f;
+    --ink: #eaf0ee; --ink-2: #a8b4b1; --ink-3: #78857f;
+    --brand: #5aaab3; --brand-2: #3f8b93; --brand-ink: #8fd0d6; --brand-soft: #1c3436;
+    --accent: #e8b65a; --accent-soft: #3a2f1a; --accent-ink: #f1cd88;
+    --income: #2fb3c4; --expense: #e57a55; --violet: #8a7de6; --danger: #ef6a55;
+    --hero-1: #134652; --hero-2: #17383b;
+    --shadow: 0 1px 2px rgba(0,0,0,.3); --shadow-lg: 0 -8px 40px rgba(0,0,0,.5);
+    --t1: #3a301b; --t2: #1b3530; --t3: #262a45; --t4: #3d2620; --t5: #1d3040; --t6: #35253a; --t7: #283520; --t8: #362c22;
+}
+:root[data-theme="forest"] { --brand: #2f5d3a; --brand-2: #3f7a4c; --brand-ink: #2f5d3a; --brand-soft: #e3eee4; --hero-1: #2f5d3a; --hero-2: #4a7c4f; }
+@media (prefers-color-scheme: dark) { :root[data-theme="forest"]:not([data-mode="light"]) { --brand: #7fbf8a; --brand-2: #5e9e6a; --brand-ink: #a6dcaf; --brand-soft: #1d3322; --hero-1: #24452b; --hero-2: #1c3522; } }
+:root[data-theme="forest"][data-mode="dark"] { --brand: #7fbf8a; --brand-2: #5e9e6a; --brand-ink: #a6dcaf; --brand-soft: #1d3322; --hero-1: #24452b; --hero-2: #1c3522; }
+:root[data-theme="indigo"] { --brand: #2c3e8f; --brand-2: #4153b0; --brand-ink: #2c3e8f; --brand-soft: #e4e8f8; --hero-1: #2c3e8f; --hero-2: #4a5bb8; }
+@media (prefers-color-scheme: dark) { :root[data-theme="indigo"]:not([data-mode="light"]) { --brand: #8c9ef0; --brand-2: #6d7fd4; --brand-ink: #b3c0ff; --brand-soft: #22284a; --hero-1: #28336e; --hero-2: #1f2650; } }
+:root[data-theme="indigo"][data-mode="dark"] { --brand: #8c9ef0; --brand-2: #6d7fd4; --brand-ink: #b3c0ff; --brand-soft: #22284a; --hero-1: #28336e; --hero-2: #1f2650; }
+:root[data-theme="rose"] { --brand: #9b3d5a; --brand-2: #b65572; --brand-ink: #9b3d5a; --brand-soft: #f6e3e9; --hero-1: #9b3d5a; --hero-2: #c0607c; }
+@media (prefers-color-scheme: dark) { :root[data-theme="rose"]:not([data-mode="light"]) { --brand: #e597ae; --brand-2: #c87790; --brand-ink: #f3bccb; --brand-soft: #3d2229; --hero-1: #5c2a3a; --hero-2: #41202b; } }
+:root[data-theme="rose"][data-mode="dark"] { --brand: #e597ae; --brand-2: #c87790; --brand-ink: #f3bccb; --brand-soft: #3d2229; --hero-1: #5c2a3a; --hero-2: #41202b; }
+:root[data-theme="amber"] { --brand: #8a5a1f; --brand-2: #a8732f; --brand-ink: #8a5a1f; --brand-soft: #f5ebdc; --hero-1: #8a5a1f; --hero-2: #b07a35; }
+@media (prefers-color-scheme: dark) { :root[data-theme="amber"]:not([data-mode="light"]) { --brand: #e3b06b; --brand-2: #c4934f; --brand-ink: #f0cd98; --brand-soft: #3a2c18; --hero-1: #5a4020; --hero-2: #3e2d18; } }
+:root[data-theme="amber"][data-mode="dark"] { --brand: #e3b06b; --brand-2: #c4934f; --brand-ink: #f0cd98; --brand-soft: #3a2c18; --hero-1: #5a4020; --hero-2: #3e2d18; }
+:root[data-theme="graphite"] { --brand: #2b2f33; --brand-2: #4a5056; --brand-ink: #2b2f33; --brand-soft: #e7e8ea; --hero-1: #2b2f33; --hero-2: #565d64; }
+@media (prefers-color-scheme: dark) { :root[data-theme="graphite"]:not([data-mode="light"]) { --brand: #b9c0c7; --brand-2: #959da5; --brand-ink: #dfe4e9; --brand-soft: #26292d; --hero-1: #33383d; --hero-2: #202326; } }
+:root[data-theme="graphite"][data-mode="dark"] { --brand: #b9c0c7; --brand-2: #959da5; --brand-ink: #dfe4e9; --brand-soft: #26292d; --hero-1: #33383d; --hero-2: #202326; }
+/* ===== 液態玻璃（設定 → 外觀，可調透明度）===== */
+html.glass body { background: var(--bg); }
+html.glass body::before { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none;
+  background: radial-gradient(40% 35% at 15% 10%, color-mix(in srgb, var(--brand) 38%, transparent), transparent 70%),
+    radial-gradient(35% 30% at 90% 25%, color-mix(in srgb, var(--accent) 34%, transparent), transparent 70%),
+    radial-gradient(45% 35% at 70% 85%, color-mix(in srgb, var(--income) 26%, transparent), transparent 70%),
+    radial-gradient(40% 40% at 10% 80%, color-mix(in srgb, var(--violet) 20%, transparent), transparent 70%); filter: blur(10px); }
+html.glass .card, html.glass .acc-card:not(.tot), html.glass .form-group, html.glass .tx-group, html.glass .search-bar, html.glass .icon-btn, html.glass .pill,
+html.glass .tabbar, html.glass .sheet, html.glass .drawer, html.glass .ai-grid button, html.glass .seg, html.glass .cal, html.glass .store-item, html.glass .q {
+  background: color-mix(in srgb, var(--surface) var(--glass-a, 60%), transparent) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur, 22px)) saturate(1.7); backdrop-filter: blur(var(--glass-blur, 22px)) saturate(1.7);
+  border: 1px solid color-mix(in srgb, #fff var(--glass-edge, 45%), transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff var(--glass-edge, 45%), transparent), 0 8px 28px rgba(0,0,0,.08); }
+html.glass .form-group .form-group, html.glass .tx-group .tx, html.glass .card .card { background: transparent !important; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: none; }
+html.glass .appbar { background: color-mix(in srgb, var(--bg) calc(var(--glass-a, 60%) * .6), transparent); }
+html.glass .hero, html.glass .car-hero { box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 14px 36px color-mix(in srgb, var(--hero-1) 35%, transparent); }
+html.glass .seg button.on { background: color-mix(in srgb, var(--surface) 85%, transparent); }
+@media (prefers-color-scheme: dark) { html.glass:not([data-mode="light"]) { --glass-edge: 12%; } }
+html.glass[data-mode="dark"] { --glass-edge: 12%; }
+/* 外觀設定 */
+.theme-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px; }
+.theme-grid button { border: 2px solid transparent; border-radius: 16px; background: var(--surface-2); padding: 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; font: inherit; font-size: 13px; font-weight: 650; }
+.theme-grid button.on { border-color: var(--brand); }
+.theme-grid .sw { width: 100%; height: 38px; border-radius: 10px; }
+.glass-row { padding: 12px 16px 14px; }
+.glass-row input[type=range] { width: 100%; accent-color: var(--brand); }
+.glass-row .lbls { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-3); }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); }
 body { overscroll-behavior-x: none; font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Noto Sans TC", "PingFang TC", "Hiragino Sans", sans-serif;
@@ -96,9 +148,7 @@ main { padding: 4px 16px 0; }
 .cal-d.out { visibility: hidden; }
 .cal-d.none { opacity: .45; }
 .tx-group.flash .tx-day { background: var(--brand-soft); border-radius: 10px; transition: background .6s; }
-.page.active.from-r { animation: slideR .24s cubic-bezier(.2,.8,.2,1); } .page.active.from-l { animation: slideL .24s cubic-bezier(.2,.8,.2,1); }
-@keyframes slideR { from { transform: translateX(36px); opacity: .3; } to { transform: none; opacity: 1; } }
-@keyframes slideL { from { transform: translateX(-36px); opacity: .3; } to { transform: none; opacity: 1; } }
+.page.active { will-change: auto; }
 @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
 /* ---------- Cards ---------- */
@@ -179,7 +229,12 @@ main { padding: 4px 16px 0; }
 .chips::-webkit-scrollbar { display: none; }
 .chip { flex: none; border: 1px solid var(--line-2); background: transparent; border-radius: 99px; padding: 7px 14px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
 .chip.on { background: var(--ink); border-color: var(--ink); color: var(--bg); }
-.chip-sel { flex: none; border: 1px solid var(--line-2); background: transparent; border-radius: 99px; padding: 7px 12px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); -webkit-appearance: none; appearance: none; }
+.chip-sel { flex: none; border: 1px solid var(--line-2); background: transparent; border-radius: 99px; padding: 0 26px 0 14px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); -webkit-appearance: none; appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-size: 4px 4px; background-position: right 15px center, right 11px center; background-repeat: no-repeat; }
+/* 篩選列：所有標籤（含帳戶下拉）一樣高 */
+.chips .chip, .chips .chip-sel { height: 34px; line-height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; margin: 0; }
+.chips .chip { padding-top: 0; padding-bottom: 0; }
+.chips .chip-sel { display: inline-block; max-width: 150px; text-overflow: ellipsis; }
 .sum3 { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; }
 .sum3 div + div { border-left: 1px solid var(--line); }
 .sum3 small { font-size: 12px; color: var(--ink-2); }
@@ -203,8 +258,8 @@ main { padding: 4px 16px 0; }
 .tabbar [data-tab=add] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .tabbar .fab.press { transform: scale(.92); transition: transform .15s; }
 /* AI 辨識選單（dock 中間） */
-.ai-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 12px; }
-.ai-grid button { border: 0; border-radius: 18px; background: var(--surface); color: var(--ink); padding: 18px 6px 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 700; box-shadow: var(--shadow); position: relative; }
+.ai-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 12px; }
+.ai-grid button { border: 0; border-radius: 18px; background: var(--surface); color: var(--ink); padding: 16px 6px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; font: inherit; font-size: 14px; font-weight: 700; box-shadow: var(--shadow); position: relative; }
 .ai-grid button svg.i { width: 30px; height: 30px; stroke-width: 1.8; }
 .ai-grid button.hot { background: var(--brand-soft); color: var(--brand-ink); outline: 2px solid var(--brand); }
 .ai-grid .thumb { position: absolute; top: 8px; right: 8px; width: 26px; height: 26px; border-radius: 7px; background: center / cover no-repeat var(--surface-2); }
@@ -404,7 +459,8 @@ kbd { font-family: var(--num); font-size: 11px; font-weight: 700; min-width: 20p
   background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line); margin-left: auto; }
 .sidebar { display: none; }
 .wide-only { display: none; }
-@media (prefers-color-scheme: dark) { .btn:not(.sec):not(.danger) { color: #0b1514; } .side-new kbd { color: #0b1514 !important; background: rgba(0,0,0,.12) !important; } }
+@media (prefers-color-scheme: dark) { :root:not([data-mode="light"]) .btn:not(.sec):not(.danger) { color: #0b1514; } :root:not([data-mode="light"]) .side-new kbd { color: #0b1514 !important; background: rgba(0,0,0,.12) !important; } }
+:root[data-mode="dark"] .btn:not(.sec):not(.danger) { color: #0b1514; }
 #dropZone { position: fixed; inset: 0; z-index: 95; display: none; place-items: center; background: color-mix(in srgb, var(--brand) 22%, transparent); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 #dropZone.on { display: grid; }
 #dropZone > div { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 56px; border-radius: 28px; background: var(--surface); border: 2.5px dashed var(--brand); color: var(--brand-ink); }
@@ -709,6 +765,31 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
 .rr-bot select { border: 1px solid var(--line); background: var(--surface-2); border-radius: 9px; padding: 6px 8px; font-size: 13px; }
 .rec-row.match { opacity: .72; }
 .rec-foot { position: sticky; bottom: 0; padding: 12px 0 4px; background: linear-gradient(transparent, var(--bg) 30%); }
+
+.btn.sm { width: auto; padding: 8px 14px; font-size: 14px; border-radius: 12px; gap: 5px; }
+.btn.sm svg { width: 16px; height: 16px; }
+.btn.danger:not(.sm) { width: auto; padding-inline: 20px; }
+.icon-btn.sm { width: 34px; height: 34px; flex: none; }
+.icon-btn.sm svg { width: 17px; height: 17px; }
+/* ---- 出差（每一趟） ---- */
+.trip-card { padding: 14px 16px; }
+.trip-card .tc-h { display: flex; align-items: flex-start; gap: 10px; }
+.trip-card .tc-h .mid { flex: 1; min-width: 0; }
+.trip-card .tc-h b { font-size: 17px; display: block; }
+.trip-card .tc-h small { color: var(--muted); font-size: 13px; }
+.trip-card .tc-n { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 4px; }
+.trip-card .tc-n div { background: var(--bg); border-radius: 12px; padding: 8px 10px; }
+html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, transparent); }
+.trip-card .tc-n small { display: block; font-size: 11.5px; color: var(--muted); }
+.trip-card .tc-n b { font-size: 15.5px; }
+.trip-card .tc-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.trip-card .tc-cats span { font-size: 12.5px; padding: 3px 9px; border-radius: 99px; background: var(--chip, rgba(127,127,127,.12)); }
+.trip-card details summary { cursor: pointer; color: var(--accent); font-size: 14px; margin-top: 10px; list-style: none; }
+.trip-card details summary::-webkit-details-marker { display: none; }
+.trip-card details .tx-group { margin: 8px -16px 0; box-shadow: none; background: transparent; }
+.trip-card.unassigned { border: 1.5px dashed var(--line, rgba(127,127,127,.35)); }
+.trip-top { display: flex; gap: 8px; align-items: center; margin: 0 2px 12px; }
+.trip-top .grow { flex: 1; color: var(--muted); font-size: 13.5px; }
 </style>
 </head>
 <body>
@@ -829,6 +910,8 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
     </div>
     <div class="card">
       <h3>分類支出</h3>
+      <div class="chips" id="a-catF" style="margin:-2px -2px 10px"></div>
+      <div class="hint hidden" id="a-catSum" style="margin:-4px 2px 10px"></div>
       <div id="a-cats"></div>
     </div>
     <div class="card">
@@ -943,6 +1026,12 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
     <div class="form-group" id="e-tripGroup">
       <div class="frow" id="e-dailyRow"><div class="grow">計入日常開銷<small id="e-dailyHint">算進本月支出、圖表與省錢建議</small></div><label class="switch"><input type="checkbox" id="e-daily" checked><span></span></label></div>
       <div class="frow" id="e-tripRow"><div class="grow">出差<small>另計，不算日常開銷</small></div><label class="switch"><input type="checkbox" id="e-trip"><span></span></label></div>
+      <div class="frow hidden" id="e-tripPick"><label>哪次出差</label><select id="e-tripSel"></select></div>
+      <div id="e-tripNew" class="hidden">
+        <div class="frow"><label>出差名稱</label><input id="e-tnName" placeholder="例：四日市"></div>
+        <div class="frow"><label>開始</label><input type="date" id="e-tnFrom"></div>
+        <div class="frow"><label>結束</label><input type="date" id="e-tnTo"></div>
+      </div>
     </div>
     <div class="hint hidden" id="e-tripHint">出差的花費與報銷另外統計，不會算進日常開銷與省錢建議。</div>
     <div class="form-group" id="e-storeGroup">
@@ -990,14 +1079,21 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
   <div class="sheet-b" id="d-body"></div>
 </div>
 
+<!-- ===== 出差 Sheet ===== -->
+<div class="scrim" id="scrim-trip"></div>
+<div class="sheet z2" id="sh-trip">
+  <div class="sheet-h"><h2>出差</h2><button class="x" data-close="trip" data-icon="x"></button></div>
+  <div class="sheet-b" id="tp-body"></div>
+</div>
+
 <!-- ===== 設定 Sheet ===== -->
 <div class="scrim" id="scrim-set"></div>
 <div class="sheet tall set-sheet" id="sh-set">
   <div class="set-wrap" id="set-wrap">
     <aside class="set-nav">
       <div class="set-nav-h"><h2>設定</h2><button class="x set-x" data-close="set" data-icon="x"></button></div>
-      <div class="set-nav-b"><div class="set-group"><button class="set-item" data-pane="conn"><i style="background:#34c759" data-icon="cloud"></i><span class="lbl">連線與同步</span><span class="v" id="nv-conn"></span><span class="chev">›</span></button><button class="set-item" data-pane="ai"><i style="background:#5e5ce6" data-icon="sparkles"></i><span class="lbl">AI 辨識</span><span class="v" id="nv-ai"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="acc"><i style="background:#0a84ff" data-icon="bank"></i><span class="lbl">帳戶</span><span class="v" id="nv-acc"></span><span class="chev">›</span></button><button class="set-item" data-pane="cat"><i style="background:#ff9f0a" data-icon="tag"></i><span class="lbl">記帳分類</span><span class="v" id="nv-cat"></span><span class="chev">›</span></button><button class="set-item" data-pane="period"><i style="background:#ff375f" data-icon="calendar"></i><span class="lbl">記帳區間</span><span class="v" id="nv-period"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="import"><i style="background:#30b0c7" data-icon="download"></i><span class="lbl">匯入資料</span><span class="v" id="nv-import"></span><span class="chev">›</span></button><button class="set-item" data-pane="offline"><i style="background:#8e8e93" data-icon="cloudOff"></i><span class="lbl">離線</span><span class="v" id="nv-offline"></span><span class="chev">›</span></button><button class="set-item" data-pane="about"><i style="background:#64748b" data-icon="info"></i><span class="lbl">其他</span><span class="v" id="nv-about"></span><span class="chev">›</span></button></div>
-        <div class="hint" style="text-align:center;margin:18px 0 0">AI 記帳 v3.9</div>
+      <div class="set-nav-b"><div class="set-group"><button class="set-item" data-pane="conn"><i style="background:#34c759" data-icon="cloud"></i><span class="lbl">連線與同步</span><span class="v" id="nv-conn"></span><span class="chev">›</span></button><button class="set-item" data-pane="ai"><i style="background:#5e5ce6" data-icon="sparkles"></i><span class="lbl">AI 辨識</span><span class="v" id="nv-ai"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="acc"><i style="background:#0a84ff" data-icon="bank"></i><span class="lbl">帳戶</span><span class="v" id="nv-acc"></span><span class="chev">›</span></button><button class="set-item" data-pane="cat"><i style="background:#ff9f0a" data-icon="tag"></i><span class="lbl">記帳分類</span><span class="v" id="nv-cat"></span><span class="chev">›</span></button><button class="set-item" data-pane="period"><i style="background:#ff375f" data-icon="calendar"></i><span class="lbl">記帳區間</span><span class="v" id="nv-period"></span><span class="chev">›</span></button><button class="set-item" data-pane="look"><i style="background:#af52de" data-icon="sparkles"></i><span class="lbl">外觀</span><span class="v" id="nv-look"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="import"><i style="background:#30b0c7" data-icon="download"></i><span class="lbl">匯入資料</span><span class="v" id="nv-import"></span><span class="chev">›</span></button><button class="set-item" data-pane="offline"><i style="background:#8e8e93" data-icon="cloudOff"></i><span class="lbl">離線</span><span class="v" id="nv-offline"></span><span class="chev">›</span></button><button class="set-item" data-pane="about"><i style="background:#64748b" data-icon="info"></i><span class="lbl">其他</span><span class="v" id="nv-about"></span><span class="chev">›</span></button></div>
+        <div class="hint" style="text-align:center;margin:18px 0 0">AI 記帳 v4.0</div>
       </div>
     </aside>
     <section class="set-main">
@@ -1048,6 +1144,18 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
     <div class="form-group">
       <div class="frow"><div class="grow">每月起始日<small id="ms-hint">例：選 20 日 → 11月 = 10/20～11/19</small></div><select id="ms-day" style="flex:none;width:90px"></select></div>
     </div>
+</div>
+<div class="set-pane" data-pane="look">
+  <div class="set-h">主題顏色</div>
+  <div class="form-group"><div class="theme-grid" id="lk-theme"></div></div>
+  <div class="set-h">深淺色</div>
+  <div class="form-group" style="padding:10px"><div class="seg" id="lk-mode"><button data-md="auto">跟隨系統</button><button data-md="light">淺色</button><button data-md="dark">深色</button></div></div>
+  <div class="set-h">液態玻璃</div>
+  <div class="form-group">
+    <div class="frow"><div class="grow">液態玻璃效果<small>卡片、選單、底部 dock 變成半透明的毛玻璃</small></div><label class="switch"><input type="checkbox" id="lk-glass"><span></span></label></div>
+    <div class="glass-row" id="lk-glassRow"><div class="frow" style="padding:0 0 6px;border:0"><label style="width:auto">透明度</label><b id="lk-glassV" class="num"></b></div><input type="range" id="lk-glassA" min="0" max="100" step="5"><div class="lbls"><span>較實</span><span>較透明</span></div></div>
+  </div>
+  <div class="sec-note">外觀設定存在這台裝置上，每台 iPhone、iPad、Mac 可以各自設定。</div>
 </div>
 <div class="set-pane" data-pane="import">
     <div class="form-group">

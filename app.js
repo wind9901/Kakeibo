@@ -990,14 +990,27 @@ function renderAna() {
 
   // 分類
   const prev = ms[10];
-  const list = Object.entries(cur.byCat).sort((a, b) => b[1] - a[1]);
+  const all = Object.entries(cur.byCat).sort((a, b) => b[1] - a[1]);
+  // 篩選：只看選取的分類（記在這台裝置）
+  const fsel = (S.prefs.anaCats || []).filter(k => k);
+  const list = fsel.length ? all.filter(([k]) => fsel.includes(k)) : all;
+  const names = [...new Set(all.map(x => x[0]).concat(fsel))];
+  $('#a-catF').innerHTML = `<button class="chip ${fsel.length ? '' : 'on'}" data-cf="">全部</button>` + names.map(k => `<button class="chip ${fsel.includes(k) ? 'on' : ''}" data-cf="${esc(k)}">${catInfo('支出', k).icon.replace('class="i"', 'class="i ii"')} ${esc(k)}</button>`).join('');
+  $$('#a-catF [data-cf]').forEach(b => b.onclick = () => {
+    const k = b.dataset.cf; let f = (S.prefs.anaCats || []).slice();
+    if (!k) f = []; else f = f.includes(k) ? f.filter(x => x !== k) : f.concat(k);
+    S.prefs.anaCats = f; persist('prefs'); renderAna();
+  });
+  const fsum = list.reduce((a, x) => a + x[1], 0);
+  $('#a-catSum').classList.toggle('hidden', !fsel.length);
+  if (fsel.length) $('#a-catSum').innerHTML = `已選 ${fsel.length} 個分類：<b class="num">${yen(fsum)}</b>・佔本月支出 ${cur.expense ? Math.round(fsum / cur.expense * 100) : 0}%${prev.byCat ? `・上月 ${yen(fsel.reduce((a, k) => a + (prev.byCat[k] || 0), 0))}` : ''}`;
   const mx = Math.max(1, ...list.map(x => x[1]));
   $('#a-cats').innerHTML = list.length ? list.map(([k, v]) => {
     const c = catInfo('支出', k); const ch = pctChip(v, prev.byCat[k]);
     return `<div class="cbar drill" data-dc="${esc(k)}"><div class="ico" style="background:${hashTint(k)}">${c.icon}</div>
       <div><div class="nm"><span>${esc(k)}</span><small>${Math.round(v / cur.expense * 100)}%</small></div><div class="track"><div class="fill" style="width:${v / mx * 100}%"></div></div></div>
       <div class="v num">${yen(v)}${ch ? `<small class="${ch[0] === '▲' ? 'exp' : 'inc'}">${ch}</small>` : ''}</div><span class="chev">›</span></div>`;
-  }).join('') : '<div class="empty" style="padding:12px">本月尚無支出</div>';
+  }).join('') : `<div class="empty" style="padding:12px">${fsel.length ? '選取的分類本月沒有支出' : '本月尚無支出'}</div>`;
   $$('#a-pay [data-dg]').forEach(x => x.onclick = () => openDrill({ ym, group: x.dataset.dg }));
   $$('#a-cats [data-dc]').forEach(x => x.onclick = () => openDrill({ ym, cat: x.dataset.dc }));
 
@@ -1077,7 +1090,8 @@ function resetEntry() {
   setTaxUI();
   setInst(0); $('#e-amount').value = ''; $('#e-toAmt').value = ''; $('#e-store').value = ''; $('#e-addr').value = ''; $('#e-phone').value = ''; $('#e-note').value = '';
   $('#e-items').innerHTML = ''; $('#e-date').value = today(); $('#e-sub').value = ''; $('#e-unit').value = ''; $('#e-liters').value = ''; $('#e-odo').value = ''; $('#e-fuelCalc').textContent = '';
-  $('#e-trip').checked = false; E.dailyTouched = false; $('#e-daily').checked = true; onTripChange();
+  $('#e-trip').checked = false; E.dailyTouched = false; $('#e-daily').checked = true; E.tripId = '';
+  $('#e-tripSel').innerHTML = ''; $('#e-tnName').value = ''; $('#e-tnFrom').value = ''; $('#e-tnTo').value = ''; onTripChange();
 }
 function onCatChange() {
   if ($('#e-subSel')) fillSubList();
@@ -1103,8 +1117,46 @@ function fuelCalc(src) {
   const prev = fuelLog().filter(r => r.odo > 0 && r.t.id !== E.editId && r.date <= ($('#e-date').value || today())).pop();
   $('#e-fuelCalc').textContent = odo > 0 && prev && odo > prev.odo && l2 > 0 ? `油耗 ${Math.round((odo - prev.odo) / l2 * 10) / 10} km/L（距上次 ${odo - prev.odo} km）` : prev ? `上次里程 ${prev.odo.toLocaleString()} km` : '';
 }
+// ---------- 出差：每一趟分開記（例：11/11–11/13 四日市）----------
+const tripsAll = () => (S.meta.trips || []).slice().sort((a, b) => String(b.start).localeCompare(String(a.start)));
+const tripRange = t => t.start ? `${fmtMD(t.start)}${t.end && t.end !== t.start ? '–' + fmtMD(t.end) : ''}` : '';
+const tripDays = t => t.start && t.end ? Math.round((new Date(t.end + 'T12:00:00') - new Date(t.start + 'T12:00:00')) / 864e5) + 1 : 1;
+/** 涵蓋這一天的出差（多個重疊時取最近開始的） */
+const tripCover = d => tripsAll().find(t => t.start && t.start <= d && (t.end || t.start) >= d) || null;
+/** 這筆紀錄屬於哪一趟：有指定就用指定的，否則依日期自動對應 */
+function tripOf(t) {
+  if (!t.trip) return null;
+  if (t.trip !== '1') { const x = (S.meta.trips || []).find(r => r.id === t.trip); if (x) return x; }
+  return tripCover(t.date);
+}
+async function saveTrip(t) {
+  const list = S.meta.trips = S.meta.trips || [];
+  const i = list.findIndex(x => x.id === t.id); if (i >= 0) list[i] = t; else list.push(t);
+  await persist('meta'); await DB.put('ops', { op: 'trip', trip: t });
+}
+async function deleteTripLocal(id) {
+  S.meta.trips = (S.meta.trips || []).filter(x => x.id !== id);
+  await persist('meta'); await DB.put('ops', { op: 'tripDel', id });
+  // 指定到這一趟的紀錄改回「依日期自動對應」
+  for (const t of S.txs.filter(x => x.trip === id)) await localSaveTx(Object.assign({}, t, { trip: '1' }), !t._pending);
+}
+function fillTripSel(cur) {
+  const d = $('#e-date').value || today();
+  const auto = tripCover(d);
+  $('#e-tripSel').innerHTML = `<option value="">依日期自動${auto ? `（${esc(auto.name)}）` : '（還沒建立這幾天的出差）'}</option>`
+    + tripsAll().map(t => `<option value="${esc(t.id)}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}　${tripRange(t)}</option>`).join('')
+    + `<option value="__new">＋ 新增一趟出差…</option>`;
+  if (cur && !tripsAll().some(t => t.id === cur)) $('#e-tripSel').value = '';
+}
+function onTripSel() {
+  const nw = $('#e-tripSel').value === '__new';
+  $('#e-tripNew').classList.toggle('hidden', !nw);
+  if (nw) { const d = $('#e-date').value || today(); if (!$('#e-tnFrom').value) $('#e-tnFrom').value = d; if (!$('#e-tnTo').value) $('#e-tnTo').value = d; setTimeout(() => $('#e-tnName').focus(), 50); }
+}
 function onTripChange() {
   const on = $('#e-trip').checked;
+  $('#e-tripPick').classList.toggle('hidden', !on);
+  if (on) { if (!$('#e-tripSel').options.length) fillTripSel(E.tripId || ''); } else $('#e-tripNew').classList.add('hidden');
   $('#e-tripRow').classList.toggle('on', on);
   $('#e-tripHint').classList.toggle('hidden', !on);
   $('#e-dailyRow').classList.toggle('hidden', on || E.type === '振替');
@@ -1396,7 +1448,7 @@ function openEntry(o) {
     $('#e-amount').value = t.original; $('#e-date').value = t.date; $('#e-toAmt').value = t.toAmount || '';
     $('#e-store').value = t.store || ''; $('#e-addr').value = t.storeAddress || ''; $('#e-phone').value = t.storePhone || ''; $('#e-note').value = t.note || '';
     $('#e-sub').value = t.sub || ''; E.group = t.group || '';
-    $('#e-unit').value = t.unitPrice || ''; $('#e-liters').value = t.liters || ''; $('#e-odo').value = t.odo || ''; $('#e-trip').checked = !!t.trip; setInst(t.inst); E.dailyTouched = !!t.excl; $('#e-daily').checked = !isExcluded(Object.assign({}, t, { trip: '' })); onTripChange();
+    $('#e-unit').value = t.unitPrice || ''; $('#e-liters').value = t.liters || ''; $('#e-odo').value = t.odo || ''; $('#e-trip').checked = !!t.trip; E.tripId = t.trip && t.trip !== '1' ? t.trip : ''; $('#e-tripSel').innerHTML = ''; setInst(t.inst); E.dailyTouched = !!t.excl; $('#e-daily').checked = !isExcluded(Object.assign({}, t, { trip: '' })); onTripChange();
     E.totalManual = true; (t.items || []).forEach(addItemRow); E.totalManual = true; applyTotals();
     setCurrency(t.currency || 'JPY'); onAccChange();
   }
@@ -1440,6 +1492,7 @@ function defaultPayAccount(cur) {
 /** 這張收據該記到哪個帳戶，回傳 { name, why } */
 function matchReceiptAccount(r) {
   const vis = visibleAccounts();
+  if (S.pickAcc && accMap()[S.pickAcc]) return { name: S.pickAcc, why: '你指定的帳戶' };
   const l4 = (String(r.cardLast4 || '').match(/\d{4}(?!.*\d)/) || [''])[0];
   if (l4) { const a = vis.find(x => last4Of(x).includes(l4)); if (a) return { name: a.name, why: `卡號末 4 碼 ${l4}` }; }
   // 付款方式原文優先，其次備註、店名（舊版後端沒有 paymentText）
@@ -1498,7 +1551,16 @@ async function saveEntry(opt) {
   const inst = E.type === '支出' && am[account].type === '信用卡' ? (Number($('#e-inst').value) || 0) : 0;
   const toAmount = parseAmt($('#e-toAmt').value) || '';
   const items = E.type === '支出' ? readItems() : [];
-  const trip = E.type !== '振替' && $('#e-trip').checked ? '1' : '';
+  let trip = E.type !== '振替' && $('#e-trip').checked ? '1' : '';
+  if (trip) {
+    const sv = $('#e-tripSel').value;
+    if (sv === '__new') {
+      const name = $('#e-tnName').value.trim(), f = $('#e-tnFrom').value, t2 = $('#e-tnTo').value || f;
+      if (!name) { if (!silent) { toast('請填出差名稱'); $('#e-tnName').focus(); } return false; }
+      const nt = { id: newId(), name, start: f <= t2 ? f : t2, end: f <= t2 ? t2 : f, note: '' };
+      await saveTrip(nt); trip = nt.id;
+    } else if (sv) trip = sv;
+  }
   const defEx = defaultExcluded({ category: E.category, sub: $('#e-sub').value, note: $('#e-note').value, store: $('#e-store').value });
   const wantEx = E.type !== '振替' && !trip && !$('#e-daily').checked;
   const excl = E.type === '振替' || trip ? '' : wantEx === defEx ? '' : (wantEx ? '1' : '0');
@@ -1547,50 +1609,102 @@ async function saveEntry(opt) {
 function aiMenu(clip) {
   if (!canOnline() && !S.prefs.queuePhotos) return toast(navigator.onLine ? '請先到設定連線 Google 試算表' : '離線中：長按中間的按鈕可以手動記帳', 3500);
   closeSheet('detail');
+  if (!clip) S.pickAcc = '';
   const showClip = !!clip || canClipRead();
   openSheet('detail', 'AI 辨識', `<div class="hint" style="margin:2px 4px 4px">收據、網購截圖、銀行或信用卡明細都可以。</div>
-    <div class="ai-grid" style="grid-template-columns:repeat(${showClip ? 3 : 2},minmax(0,1fr))">
+    <div class="ai-grid">
       <button data-ai="cam">${icon('camera')}拍照</button>
       ${showClip ? `<button data-ai="clip" class="${clip ? 'hot' : ''}">${clip ? `<span class="thumb" style="background-image:url('${URL.createObjectURL(clip.files[0])}')"></span>` : ''}${icon('copy')}剪貼簿貼上</button>` : ''}
       <button data-ai="pick">${icon('image')}選擇截圖</button>
+      <button data-ai="csv">${icon('doc')}CSV 明細</button>
     </div>
-    <div class="hint" style="text-align:center">長按中間的按鈕可以直接手動記帳</div>`);
+    <div class="form-group"><div class="frow"><label>記到帳戶</label><select id="ai-acc"><option value="">自動判斷（依收據的卡號、付款方式）</option>${visibleAccounts().map(a => `<option value="${esc(a.name)}" ${a.name === S.pickAcc ? 'selected' : ''}>${esc(a.name)}</option>`).join('')}</select></div></div>
+    <div class="hint" style="text-align:center">CSV 是信用卡或銀行網站下載的明細，會和已記的紀錄比對、補上漏記的。長按中間的按鈕可以直接手動記帳。</div>`);
+  $('#ai-acc').onchange = () => { S.pickAcc = $('#ai-acc').value; };
   $$('#d-body [data-ai]').forEach(b => b.onclick = () => {
+    S.pickAcc = $('#ai-acc').value;
+    S.batchTarget = S.pickAcc || null;
     closeSheet('detail');
+    if (b.dataset.ai === 'csv') return startReconcile(S.pickAcc || undefined);
     if (b.dataset.ai === 'clip') return clip ? handleReceiptFiles(clip.files) : pasteFromClipboard();
     $(b.dataset.ai === 'cam' ? '#f-cam' : '#f-pick').click();
   });
   if (!clip) peekClipboard().then(p => { if (p && $('#sh-detail').classList.contains('on') && $('#d-body [data-ai]')) aiMenu(p); });
 }
-// ---------- 左右滑動切換頁面（手機）----------
-const SWIPE_ORDER = ['home', 'list', 'car', 'ana'];
+// ---------- 左右滑動切換頁面（手機）：汽車 ‹ 首頁 › 明細 › 分析 ----------
+const SWIPE_ORDER = ['car', 'home', 'list', 'ana'];
+function pageSlide(to, dir) {
+  // dir: 1 = 新頁面從右邊進來（往左滑），-1 = 從左邊進來
+  const cur = $('.page.active');
+  const done = () => {
+    if (cur) { cur.style.transition = ''; cur.style.transform = ''; cur.style.opacity = ''; }
+    go(to);
+    const pg = $('#pg-' + to); if (!pg) return;
+    pg.style.transition = 'none'; pg.style.transform = `translate3d(${dir * 42}%,0,0)`; pg.style.opacity = '.35';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      pg.style.transition = 'transform .32s cubic-bezier(.22,.9,.24,1), opacity .26s ease-out';
+      pg.style.transform = 'translate3d(0,0,0)'; pg.style.opacity = '1';
+      setTimeout(() => { pg.style.transition = ''; pg.style.transform = ''; pg.style.opacity = ''; }, 340);
+    }));
+  };
+  if (!cur) return done();
+  cur.style.transition = 'transform .16s cubic-bezier(.4,0,1,1), opacity .16s';
+  cur.style.transform = `translate3d(${-dir * 38}%,0,0)`; cur.style.opacity = '0';
+  setTimeout(done, 150);
+}
+function goHome() {
+  if (S.page === 'home') return window.scrollTo({ top: 0, behavior: 'smooth' });
+  const i = SWIPE_ORDER.indexOf(S.page === 'rep' ? 'ana' : S.page);
+  pageSlide('home', i >= 0 && i < 1 ? 1 : -1);
+  if (navigator.vibrate) try { navigator.vibrate(8); } catch (e) {}
+}
 function bindSwipePages() {
-  let st = null;
+  let st = null, two = null;
   const blocked = t => {
     if (isWide()) return true;
     if ($$('.sheet.on, .drawer.on').length || $('#accScroll.reorder')) return true;
-    if (t.closest('.hscroll, .chips, .seg, .tax-seg, input, select, textarea, .tagbox, [data-noswipe], #tabbar, .cal-grid')) return true;
-    return false;
+    return !!t.closest('.hscroll, .chips, .seg, .tax-seg, input, select, textarea, .tagbox, [data-noswipe], #tabbar, .cal-grid, input[type=range]');
   };
   document.addEventListener('touchstart', e => {
+    // 兩指輕點：回首頁
+    if (e.touches.length === 2) { st && st.el && (st.el.style.transform = ''); st = null; two = { t: Date.now(), x: e.touches[0].clientX + e.touches[1].clientX, y: e.touches[0].clientY + e.touches[1].clientY }; return; }
     if (e.touches.length !== 1) { st = null; return; }
+    two = null;
     const x = e.touches[0].clientX, y = e.touches[0].clientY;
-    if (x < 24 || x > innerWidth - 24 || blocked(e.target)) { st = null; return; }
-    st = { x, y, t: Date.now() };
+    if (x < 18 || x > innerWidth - 18 || blocked(e.target)) { st = null; return; }
+    st = { x, y, t: Date.now(), lock: null, dx: 0, el: $('.page.active') };
   }, { passive: true });
-  document.addEventListener('touchend', e => {
+  document.addEventListener('touchmove', e => {
+    if (two && e.touches.length === 2) { const x = e.touches[0].clientX + e.touches[1].clientX, y = e.touches[0].clientY + e.touches[1].clientY; if (Math.hypot(x - two.x, y - two.y) > 30) two = null; return; }
+    if (!st || e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - st.x, dy = e.touches[0].clientY - st.y;
+    if (!st.lock) { if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return; st.lock = Math.abs(dx) > Math.abs(dy) * 1.2 ? 'h' : 'v'; }
+    if (st.lock !== 'h') return;
+    e.preventDefault();
+    const cur = SWIPE_ORDER.indexOf(S.page === 'rep' ? 'ana' : S.page);
+    const edge = cur < 0 || (dx > 0 && cur === 0) || (dx < 0 && cur === SWIPE_ORDER.length - 1);
+    st.dx = edge ? dx * 0.25 : dx;                      // 最邊邊的頁面：橡皮筋阻力
+    if (st.el) { st.el.style.transition = 'none'; st.el.style.transform = `translate3d(${st.dx}px,0,0)`; st.el.style.opacity = String(1 - Math.min(.45, Math.abs(st.dx) / innerWidth)); }
+  }, { passive: false });
+  const end = e => {
+    if (two && !e.touches.length) { const ok = Date.now() - two.t < 350; two = null; if (ok) goHome(); return; }
     if (!st) return;
-    const p = e.changedTouches[0], dx = p.clientX - st.x, dy = p.clientY - st.y, dt = Date.now() - st.t;
-    st = null;
-    if (dt > 700 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
-    const cur = S.page === 'rep' ? 'ana' : S.page;
-    const i = SWIPE_ORDER.indexOf(cur); if (i < 0) return;
-    const j = i + (dx < 0 ? 1 : -1);
-    if (j < 0 || j >= SWIPE_ORDER.length) return;
-    go(SWIPE_ORDER[j]);
-    const pg = $('#pg-' + SWIPE_ORDER[j]);
-    pg.classList.remove('from-l', 'from-r'); void pg.offsetWidth; pg.classList.add(dx < 0 ? 'from-r' : 'from-l');
-  }, { passive: true });
+    const s0 = st; st = null;
+    if (s0.lock !== 'h' || !s0.el) return;
+    const dt = Math.max(1, Date.now() - s0.t), v = s0.dx / dt;
+    const cur = SWIPE_ORDER.indexOf(S.page === 'rep' ? 'ana' : S.page);
+    const j = cur + (s0.dx < 0 ? 1 : -1);
+    const go2 = cur >= 0 && j >= 0 && j < SWIPE_ORDER.length && (Math.abs(s0.dx) > innerWidth * 0.22 || Math.abs(v) > 0.45);
+    if (go2) { pageSlide(SWIPE_ORDER[j], s0.dx < 0 ? 1 : -1); return; }
+    s0.el.style.transition = 'transform .28s cubic-bezier(.22,.9,.24,1), opacity .2s';
+    s0.el.style.transform = 'translate3d(0,0,0)'; s0.el.style.opacity = '1';
+    setTimeout(() => { s0.el.style.transition = ''; s0.el.style.transform = ''; s0.el.style.opacity = ''; }, 300);
+  };
+  document.addEventListener('touchend', end, { passive: true });
+  document.addEventListener('touchcancel', end, { passive: true });
+  // 點兩下頁面標題也能回首頁
+  let lastTap = 0;
+  $('.appbar') && $('.appbar').addEventListener('click', e => { if (e.target.closest('button, a, input, select')) return; const n = Date.now(); if (n - lastTap < 320) { lastTap = 0; goHome(); } else lastTap = n; });
 }
 let fabLong = false;
 function bindFab() {
@@ -1616,6 +1730,7 @@ function startScan() {
   peekClipboard().then(p => { if (p && $('#sh-detail').classList.contains('on') && $('#d-body [data-sc=clip]')) scanChooser(p); });
 }
 function scanChooser(clip) {
+  S.pickAcc = '';
   closeSheet('detail');
   const clipBtn = clip
     ? `<button class="store-item clip-hit" data-sc="clip"><span class="thumb" style="background-image:url('${URL.createObjectURL(clip.files[0])}')"></span><div><b>偵測到剪貼簿有${clip.files.length > 1 ? ` ${clip.files.length} 張` : ''}截圖</b><small>直接貼上辨識</small></div></button>`
@@ -1722,7 +1837,8 @@ function openMulti() {
       <div class="nm" data-mo="${d.id}"><b>${esc(r.store || '（未辨識店名）')}</b><small>${r.date ? fmtMD(r.date) : '日期待確認'}・${esc(cat)}${pl ? `・拆成 ${pl.length} 筆` : ''}・${acc ? esc(acc) : '<span class="exp">請選帳戶</span>'}</small></div>
       <div class="v num">${r.total > 0 ? money(r.total, r.currency || 'JPY') : '<span class="exp">金額?</span>'}<small>${(r.items || []).length} 項</small></div></div>`;
   };
-  let h = `<div class="hint" style="margin:4px 4px 12px">每張收據各記成一筆（品項分屬不同分類時會再拆開）。點店名可以先打開修改再儲存。</div>`;
+  let h = `<div class="hint" style="margin:4px 4px 12px">每張收據各記成一筆（品項分屬不同分類時會再拆開）。點店名可以先打開修改再儲存。</div>
+    <div class="form-group"><div class="frow"><label>付款帳戶</label><select id="mr-acc"><option value="">每張自動判斷</option>${visibleAccounts().map(a => `<option value="${esc(a.name)}" ${a.name === S.pickAcc ? 'selected' : ''}>全部記到 ${esc(a.name)}</option>`).join('')}</select></div></div>`;
   if (recs.length) h += `<div class="form-group">${recs.map(row).join('')}</div>`;
   if (lists.length) h += `<div class="set-h">明細清單（逐張確認）</div><div class="form-group">${lists.map(d => `<button class="store-item" data-mo="${d.id}"><div class="ico">${icon(d.result.listType === 'ic_card' ? 'train' : 'doc')}</div><div><b>${d.result.listType === 'ic_card' ? 'IC 卡履歷' : d.result.listType === 'card' ? '信用卡明細' : '明細清單'}</b><small>${(d.result.transactions || []).length} 筆・點此確認匯入</small></div></button>`).join('')}</div>`;
   if (errs.length) h += `<div class="set-h">無法辨識</div><div class="form-group">${errs.map(e => `<div class="mr err" style="grid-template-columns:38px 1fr"><div class="ico" style="background:var(--expense-soft, var(--surface-2))">${icon('alert')}</div><div class="nm"><b>${esc(e.name)}</b><small>${esc(e.msg)}</small></div></div>`).join('')}</div>`;
@@ -1732,6 +1848,7 @@ function openMulti() {
   openSheet('detail', `多張收據（${recs.length + lists.length} 張）`, h);
   const upd = () => { const c = $$('#d-body [data-mc]:checked').length; if ($('#mr-save')) { $('#mr-save').disabled = !c; $('#mr-save').lastChild.textContent = `儲存勾選的 ${c} 張收據`; } };
   $$('#d-body [data-mc]').forEach(x => x.onchange = upd); upd();
+  $('#mr-acc').onchange = () => { S.pickAcc = $('#mr-acc').value; const y = $('#d-body').scrollTop; openMulti(); $('#d-body').scrollTop = y; };
   $$('#d-body [data-mo]').forEach(b => b.onclick = () => { const d = S.drafts.find(x => x.id === b.dataset.mo); closeSheet('detail'); if (d) openDraft(d); });
   if ($('#mr-save')) $('#mr-save').onclick = saveMulti;
   $('#mr-later').onclick = () => { S.multi.errs = []; closeSheet('detail'); };
@@ -1948,6 +2065,7 @@ function openDetail(id) {
   f.push(`<div class="frow"><label>備註</label><input data-f="note" value="${esc(t.note || '')}" placeholder="選填"></div>`);
   if (t.type !== '振替') {
     f.push(`<div class="frow"><div class="grow">出差<small>另計，不算日常開銷</small></div><label class="switch"><input type="checkbox" data-f="trip" ${t.trip ? 'checked' : ''}><span></span></label></div>`);
+    if (t.trip) { const auto = tripCover(t.date); f.push(`<div class="frow"><label>哪次出差</label><select data-f="tripId"><option value="1" ${t.trip === '1' ? 'selected' : ''}>依日期自動${auto ? `（${esc(auto.name)}）` : '（未分配）'}</option>${tripsAll().map(r => `<option value="${esc(r.id)}" ${t.trip === r.id ? 'selected' : ''}>${esc(r.name)}　${tripRange(r)}</option>`).join('')}</select></div>`); }
     if (!t.trip) f.push(`<div class="frow"><div class="grow">計入日常開銷<small>${!t.excl && defaultExcluded(t) ? '車貸／購車預設不計入' : '算進本月支出與省錢建議'}</small></div><label class="switch"><input type="checkbox" data-f="daily" ${isExcluded(t) ? '' : 'checked'}><span></span></label></div>`);
   }
   // 只能看的資訊
@@ -2010,6 +2128,7 @@ async function patchTx(id, field, value, root, inPane) {
     if (field === 'original' && !(v > 0)) { flash('金額格式錯誤', true); return; }
     n[field] = field === 'toAmount' ? (v > 0 ? v : '') : v;
   } else if (field === 'trip') { n.trip = value ? '1' : ''; if (value) n.excl = ''; }
+  else if (field === 'tripId') n.trip = value || '1';
   else if (field === 'daily') { const wantEx = !value, defEx = defaultExcluded(n); n.excl = wantEx === defEx ? '' : (wantEx ? '1' : '0'); }
   else if (field === 'inst') n.inst = Number(value) > 1 ? Number(value) : 0;
   else if (field === 'date') { if (!value) return; n.date = value; }
@@ -2964,20 +3083,80 @@ function renderCar() {
 // ---------- 出差（另計）----------
 function renderTrips() {
   const all = S.txs.filter(t => t.trip && t.type !== '振替');
-  const exp = all.filter(t => t.type === '支出').reduce((a, t) => a + t.jpy, 0);
-  const inc = all.filter(t => t.type === '收入').reduce((a, t) => a + t.jpy, 0);
-  const byCat = {}; all.filter(t => t.type === '支出').forEach(t => byCat[t.category] = (byCat[t.category] || 0) + t.jpy);
-  const cats = Object.entries(byCat).sort((a, b) => b[1] - a[1]); const mx = Math.max(1, ...cats.map(x => x[1]));
-  const groups = {}; all.forEach(t => (groups[cycleKey(t.date)] = groups[cycleKey(t.date)] || []).push(t));
-  $('#a-trips').innerHTML = `<div class="card sum3"><div><small>出差支出</small><b class="num exp">${yen(exp)}</b></div><div><small>已報銷</small><b class="num inc">${yen(inc)}</b></div><div><small>${exp >= inc ? '自付／待報銷' : '報銷多於支出'}</small><b class="num">${yen(Math.abs(exp - inc))}</b></div></div>
-    <div class="hint" style="margin:-4px 8px 14px">記帳時打開「出差」開關，或在紀錄詳情按「標為出差」。出差的支出與報銷不算進日常開銷、圖表與省錢建議。</div>
-    ${cats.length ? `<div class="card"><h3>出差花費分類</h3>${cats.map(([k, v]) => `<div class="cbar"><div class="ico" style="background:${hashTint(k)}">${catInfo('支出', k).icon}</div><div><div class="nm"><span>${esc(k)}</span></div><div class="track"><div class="fill" style="width:${v / mx * 100}%"></div></div></div><div class="v num">${yen(v)}</div></div>`).join('')}</div>` : ''}
-    ${Object.keys(groups).sort().reverse().map(k => {
-      const g = groups[k].sort((a, b) => b.date.localeCompare(a.date));
-      const e = g.filter(t => t.type === '支出').reduce((a, t) => a + t.jpy, 0), r = g.filter(t => t.type === '收入').reduce((a, t) => a + t.jpy, 0);
-      return `<div class="tx-group"><div class="tx-day"><span>${monthLabel(k)}</span><span class="num">支出 ${yen(e)}${r ? '・報銷 ' + yen(r) : ''}</span></div>${g.map(txRow).join('')}</div>`;
-    }).join('') || `<div class="card empty"><span class="em">${icon('luggage')}</span>還沒有出差紀錄</div>`}`;
+  const by = {}, un = [];
+  all.forEach(t => { const r = tripOf(t); if (r) (by[r.id] = by[r.id] || []).push(t); else un.push(t); });
+  const sumOf = g => { const e = g.filter(t => t.type === '支出').reduce((a, t) => a + t.jpy, 0), r = g.filter(t => t.type === '收入').reduce((a, t) => a + t.jpy, 0); return { e, r }; };
+  const catsOf = g => { const m = {}; g.filter(t => t.type === '支出').forEach(t => m[t.category] = (m[t.category] || 0) + t.jpy); return Object.entries(m).sort((a, b) => b[1] - a[1]); };
+  const txList = g => { const days = {}; g.slice().sort((a, b) => b.date.localeCompare(a.date)).forEach(t => (days[t.date] = days[t.date] || []).push(t));
+    return Object.keys(days).sort().reverse().map(d => `<div class="tx-group"><div class="tx-day"><span>${fmtMD(d)}（${'日一二三四五六'[new Date(d + 'T12:00:00').getDay()]}）</span></div>${days[d].map(txRow).join('')}</div>`).join(''); };
+  const card = (r, g) => {
+    const { e, r: rb } = sumOf(g), cats = catsOf(g), net = e - rb;
+    return `<div class="card trip-card" data-trip="${esc(r.id)}">
+      <div class="tc-h"><div class="ico" style="background:${hashTint(r.name)}">${icon('plane')}</div><div class="mid"><b>${esc(r.name)}</b><small>${tripRange(r)}・${tripDays(r)} 天${g.length ? `・${g.length} 筆` : ''}${r.note ? '・' + esc(r.note) : ''}</small></div><button class="icon-btn sm" data-tedit="${esc(r.id)}" aria-label="編輯">${icon('pencil')}</button></div>
+      <div class="tc-n"><div><small>支出</small><b class="num exp">${yen(e)}</b></div><div><small>報銷</small><b class="num inc">${yen(rb)}</b></div><div><small>${net >= 0 ? '自付／待報銷' : '報銷多出'}</small><b class="num">${yen(Math.abs(net))}</b></div></div>
+      ${cats.length ? `<div class="tc-cats">${cats.map(([k, v]) => `<span>${esc(k)} ${yen(v)}</span>`).join('')}</div>` : ''}
+      ${g.length ? `<details><summary>查看 ${g.length} 筆明細 ›</summary>${txList(g)}</details>` : `<div class="hint" style="margin:10px 0 0">這幾天還沒有標為出差的紀錄。記帳時打開「出差」開關，日期落在 ${tripRange(r)} 就會自動算進來。</div>`}
+    </div>`;
+  };
+  const trips = tripsAll();
+  const yr = S.prefs.tripYear || 'all';
+  const years = [...new Set(trips.map(t => String(t.start).slice(0, 4)).filter(Boolean))].sort().reverse();
+  const shown = trips.filter(t => yr === 'all' || String(t.start).startsWith(yr));
+  const totE = shown.reduce((a, r) => a + sumOf(by[r.id] || []).e, 0), totR = shown.reduce((a, r) => a + sumOf(by[r.id] || []).r, 0);
+  $('#a-trips').innerHTML = `
+    <div class="trip-top"><div class="grow">${shown.length ? `${yr === 'all' ? '全部' : yr + ' 年'} ${shown.length} 趟・支出 ${yen(totE)}${totR ? '・報銷 ' + yen(totR) : ''}` : '每一趟出差分開記'}</div>
+      ${years.length > 1 ? `<select class="chip-sel" id="tp-year"><option value="all">全部年份</option>${years.map(y => `<option ${y === yr ? 'selected' : ''}>${y}</option>`).join('')}</select>` : ''}
+      <button class="btn sm" id="tp-add">${icon('plus')} 新增出差</button></div>
+    ${un.length ? `<div class="card trip-card unassigned"><div class="tc-h"><div class="ico" style="background:var(--muted)">${icon('luggage')}</div><div class="mid"><b>未分配到出差</b><small>${un.length} 筆・支出 ${yen(sumOf(un).e)}${sumOf(un).r ? '・報銷 ' + yen(sumOf(un).r) : ''}</small></div></div>
+      <div class="hint" style="margin:8px 0 0">這些紀錄有標出差，但日期不在任何一趟出差裡。可以依日期自動分成幾趟（相隔超過 2 天就分開），之後再改名字。</div>
+      <div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm" id="tp-auto">${icon('sparkles')} 依日期自動分組</button></div>
+      <details><summary>查看 ${un.length} 筆 ›</summary>${txList(un)}</details></div>` : ''}
+    ${shown.map(r => card(r, by[r.id] || [])).join('') || (un.length ? '' : `<div class="card empty"><span class="em">${icon('luggage')}</span>還沒有出差紀錄<br><small>按「新增出差」建立一趟，例如「四日市 11/11–11/13」</small></div>`)}
+    <div class="hint" style="margin:4px 8px 14px">記帳時打開「出差」開關：預設依日期自動歸到那一趟，也可以直接選哪一趟。出差的支出與報銷不算進日常開銷、圖表與省錢建議。</div>`;
   bindTx($('#a-trips'));
+  $('#tp-add').onclick = () => openTripEdit();
+  if ($('#tp-year')) $('#tp-year').onchange = e => { S.prefs.tripYear = e.target.value; persist('prefs'); renderTrips(); };
+  $$('[data-tedit]', $('#a-trips')).forEach(b => b.onclick = () => openTripEdit(b.dataset.tedit));
+  if ($('#tp-auto')) $('#tp-auto').onclick = () => autoGroupTrips(un);
+}
+/** 未分配的出差紀錄依日期分群（間隔超過 2 天就分開），每群建一趟 */
+async function autoGroupTrips(un) {
+  const ds = [...new Set(un.map(t => t.date))].sort(); if (!ds.length) return;
+  const gs = []; let cur = [ds[0]];
+  for (let i = 1; i < ds.length; i++) {
+    const gap = (new Date(ds[i] + 'T12:00:00') - new Date(cur[cur.length - 1] + 'T12:00:00')) / 864e5;
+    if (gap > 2) { gs.push(cur); cur = [ds[i]]; } else cur.push(ds[i]);
+  }
+  gs.push(cur);
+  if (!confirm(`要建立 ${gs.length} 趟出差嗎？\n\n${gs.map(g => fmtMD(g[0]) + (g.length > 1 ? '–' + fmtMD(g[g.length - 1]) : '')).join('\n')}\n\n名稱先叫「出差」，之後可以按鉛筆改成地點。`)) return;
+  for (const g of gs) await saveTrip({ id: newId(), name: '出差', start: g[0], end: g[g.length - 1], note: '' });
+  toast(`已建立 ${gs.length} 趟出差`); renderTrips(); renderSync(); sync();
+}
+function openTripEdit(id) {
+  const r = id ? (S.meta.trips || []).find(x => x.id === id) : null;
+  const n = r ? S.txs.filter(t => t.trip && tripOf(t) === r).length : 0;
+  openSheet('trip', r ? '編輯出差' : '新增出差', `
+    <div class="form-group">
+      <div class="frow"><label>名稱</label><input id="tp-name" placeholder="例：四日市" value="${esc(r ? r.name : '')}"></div>
+      <div class="frow"><label>開始</label><input type="date" id="tp-from" value="${r ? r.start : today()}"></div>
+      <div class="frow"><label>結束</label><input type="date" id="tp-to" value="${r ? r.end || r.start : today()}"></div>
+      <div class="frow"><label>備註</label><input id="tp-note" placeholder="客戶、目的…（選填）" value="${esc(r ? r.note : '')}"></div>
+    </div>
+    <div class="hint">日期範圍內標為「出差」的紀錄會自動算進這一趟。</div>
+    <div style="display:flex;gap:10px;margin-top:14px">${r ? `<button class="btn danger" id="tp-del">刪除</button>` : ''}<button class="btn" style="flex:1" id="tp-save">儲存</button></div>`);
+  setTimeout(() => { if (!r) $('#tp-name').focus(); }, 250);
+  $('#tp-save').onclick = async () => {
+    const name = $('#tp-name').value.trim(); let a = $('#tp-from').value, b = $('#tp-to').value || a;
+    if (!name) { toast('請填名稱'); $('#tp-name').focus(); return; }
+    if (!a) { toast('請選開始日'); return; }
+    if (b < a) [a, b] = [b, a];
+    await saveTrip({ id: r ? r.id : newId(), name, start: a, end: b, note: $('#tp-note').value.trim() });
+    closeSheet('trip'); toast(r ? '已更新' : `已新增「${name}」`); renderPage(); renderSync(); sync();
+  };
+  if (r) $('#tp-del').onclick = async () => {
+    if (!confirm(`刪除「${r.name}」？${n ? `\n裡面的 ${n} 筆紀錄仍保留出差標記，會變成依日期自動對應。` : ''}`)) return;
+    await deleteTripLocal(r.id); closeSheet('trip'); toast('已刪除'); renderPage(); renderSync(); sync();
+  };
 }
 
 // ---------- Money Forward ME 匯入 ----------
@@ -3277,7 +3456,7 @@ async function runDiag() {
 
 // ---------- 設定 ----------
 // ---------- 設定（Apple 風格：左側選單、右側內容）----------
-const SET_TITLES = { conn: '連線與同步', ai: 'AI 辨識', acc: '帳戶', cat: '記帳分類', period: '記帳區間', import: '匯入資料', offline: '離線', about: '其他' };
+const SET_TITLES = { conn: '連線與同步', ai: 'AI 辨識', acc: '帳戶', cat: '記帳分類', period: '記帳區間', look: '外觀', import: '匯入資料', offline: '離線', about: '其他' };
 const setWide = () => matchMedia('(min-width: 700px)').matches;
 function showPane(p, title, back) {
   S.setPane = p; if (p === 'dyn') S.dynBack = back || 'acc';
@@ -3293,7 +3472,43 @@ function showDyn(title, html, back) {
   $('#set-dyn').innerHTML = html; hydrate($('#set-dyn'));
   showPane('dyn', title, back);
 }
+// ---------- 外觀：主題、深淺色、液態玻璃（存在這台裝置）----------
+const THEMES = [['', '深青', '#0f4c5c', '#1e6d6e'], ['forest', '森林', '#2f5d3a', '#4a7c4f'], ['indigo', '夜藍', '#2c3e8f', '#4a5bb8'], ['rose', '玫瑰', '#9b3d5a', '#c0607c'], ['amber', '琥珀', '#8a5a1f', '#b07a35'], ['graphite', '石墨', '#2b2f33', '#565d64']];
+function getLook() { try { return Object.assign({ theme: '', mode: 'auto', glass: false, glassA: 45 }, JSON.parse(localStorage.getItem('kakeibo-look') || '{}')); } catch (e) { return { theme: '', mode: 'auto', glass: false, glassA: 45 }; } }
+function applyLook(l) {
+  l = l || getLook();
+  const r = document.documentElement;
+  if (l.theme) r.dataset.theme = l.theme; else delete r.dataset.theme;
+  if (l.mode && l.mode !== 'auto') r.dataset.mode = l.mode; else delete r.dataset.mode;
+  r.classList.toggle('glass', !!l.glass);
+  const t = Math.max(0, Math.min(100, Number(l.glassA) || 0));
+  r.style.setProperty('--glass-a', (100 - t * 0.85).toFixed(0) + '%');   // 表面不透明度：100%（實）→ 15%（很透明）
+  r.style.setProperty('--glass-blur', (12 + t * 0.18).toFixed(0) + 'px');
+  // 狀態列顏色跟著深淺色
+  const dark = l.mode === 'dark' || (l.mode !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+  $$('meta[name=theme-color]').forEach(m => { m.removeAttribute('media'); m.content = dark ? '#0e1615' : '#f3f1ec'; });
+}
+function saveLook(patch) { const l = Object.assign(getLook(), patch); try { localStorage.setItem('kakeibo-look', JSON.stringify(l)); } catch (e) {} applyLook(l); renderLook(); if (S.page === 'car' || S.page === 'ana' || S.page === 'home') renderPage(); }
+function renderLook() {
+  const l = getLook();
+  if (!$('#lk-theme')) return;
+  $('#lk-theme').innerHTML = THEMES.map(([k, n, a, b]) => `<button type="button" data-th="${k}" class="${(l.theme || '') === k ? 'on' : ''}"><span class="sw" style="background:linear-gradient(135deg,${a},${b})"></span>${n}</button>`).join('');
+  $$('#lk-theme [data-th]').forEach(b => b.onclick = () => saveLook({ theme: b.dataset.th }));
+  $$('#lk-mode [data-md]').forEach(b => { b.classList.toggle('on', b.dataset.md === (l.mode || 'auto')); b.onclick = () => saveLook({ mode: b.dataset.md }); });
+  $('#lk-glass').checked = !!l.glass;
+  $('#lk-glass').onchange = () => saveLook({ glass: $('#lk-glass').checked });
+  $('#lk-glassRow').classList.toggle('hidden', !l.glass);
+  $('#lk-glassA').value = l.glassA; $('#lk-glassV').textContent = l.glassA + '%';
+  $('#lk-glassA').oninput = () => { const v = Number($('#lk-glassA').value); $('#lk-glassV').textContent = v + '%'; const x = Object.assign(getLook(), { glassA: v }); applyLook(x); };
+  $('#lk-glassA').onchange = () => saveLook({ glassA: Number($('#lk-glassA').value) });
+  const th = THEMES.find(t => t[0] === (l.theme || ''));
+  if ($('#nv-look')) $('#nv-look').textContent = (th ? th[1] : '') + (l.glass ? '・玻璃' : '');
+}
+applyLook();
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyLook()); } catch (e) {}
+
 function fillSetNav() {
+  renderLook();
   const st = S.meta.settings;
   const nv = {
     conn: !S.conn.url ? '未連線' : navigator.onLine ? (pendingCount() ? pendingCount() + ' 筆待同步' : '已同步') : '離線',
@@ -3543,7 +3758,7 @@ function bind() {
   bindFab(); bindSwipePages();
   $$('[data-goto]').forEach(b => b.onclick = () => go(b.dataset.goto));
   $$('[data-close]').forEach(b => b.onclick = () => closeSheet(b.dataset.close));
-  ['entry', 'store', 'detail', 'set', 'acc'].forEach(n => $('#scrim-' + n).onclick = () => closeSheet(n));
+  ['entry', 'store', 'detail', 'set', 'acc', 'trip'].forEach(n => $('#scrim-' + n).onclick = () => closeSheet(n));
   $('#btnSettings').onclick = () => openSettings();
   $('#lnkAccMgr').onclick = () => openSettings(true);
   $('#syncPill').onclick = () => S.conn.url ? sync(true) : openSettings();
@@ -3570,8 +3785,9 @@ function bind() {
   $('#btnSearch').onclick = focusSearch;
   $('#drill-back').onclick = drillBack;
   $('#scrim-drill').onclick = () => closeSheet('drill');
-  $('#e-date').onchange = updateConv;
+  $('#e-date').onchange = () => { updateConv(); if ($('#e-trip').checked && $('#e-tripSel').value !== '__new') fillTripSel($('#e-tripSel').value); };
   $('#e-trip').onchange = onTripChange;
+  $('#e-tripSel').onchange = onTripSel;
   $('#e-daily').onchange = () => { E.dailyTouched = true; onDailyChange(); };
   $('#e-sub').oninput = onCatChange;
   $('#e-subSel').onchange = () => {
@@ -3613,7 +3829,7 @@ function bind() {
   document.addEventListener('paste', e => {
     const its = [...(e.clipboardData ? e.clipboardData.items : [])].filter(x => x.kind === 'file' && /^image\/|application\/pdf/.test(x.type));
     if (!its.length) return;
-    e.preventDefault(); hideClipPill(); handleReceiptFiles(its.map(x => x.getAsFile()));
+    e.preventDefault(); hideClipPill(); S.pickAcc = ''; handleReceiptFiles(its.map(x => x.getAsFile()));
   });
   // 鍵盤快捷鍵（Mac、iPad 外接鍵盤）
   document.addEventListener('keydown', e => {
