@@ -382,6 +382,7 @@ async function sync(manual) {
     if (!rest.some(o => o.op === 'settings') && d.settings && d.settings.monthStart && d.settings.monthStart !== S.prefs.monthStart) { S.prefs.monthStart = d.settings.monthStart; await persist('prefs'); S.listMonth = S.anaMonth = cycleKey(today()); }
     if (!rest.some(o => o.op === 'settings' && o.settings && o.settings.accOrder) && d.settings && Array.isArray(d.settings.accOrder) && d.settings.accOrder.length) { S.prefs.accOrder = d.settings.accOrder; await persist('prefs'); }
     if (!rest.some(o => o.op === 'settings' && o.settings && 'defaultPay' in o.settings) && d.settings && d.settings.defaultPay) { S.prefs.defaultPay = d.settings.defaultPay; await persist('prefs'); }
+    if (!rest.some(o => o.op === 'settings' && o.settings && o.settings.brokers) && d.settings && Array.isArray(d.settings.brokers)) { S.prefs.brokers = d.settings.brokers; await persist('prefs'); }
     if (!rest.some(o => o.op === 'settings' && o.settings && o.settings.cardBills) && d.settings && d.settings.cardBills && typeof d.settings.cardBills === 'object') { S.prefs.cardBills = d.settings.cardBills; await persist('prefs'); }
     const acTypes = (d.accountTypes || []).concat(rest.filter(o => o.op === 'accountType').map(o => o.name));
     S.meta = { accountTypes: acTypes, accounts, categories: d.categories, stores: d.stores, trips: trips.filter(t => !delTrips.has(t.id)), settings: d.settings, sheetUrl: d.sheetUrl };
@@ -3791,10 +3792,52 @@ async function invLoad(force) {
     const lots = d.lots.slice();
     rest.forEach(o => { if (o.op === 'invLot') { const i = lots.findIndex(x => x.id === o.lot.id); if (i >= 0) lots[i] = o.lot; else lots.push(o.lot); } else { const i = lots.findIndex(x => x.id === o.id); if (i >= 0) lots.splice(i, 1); } });
     S.inv = { lots, prices: d.prices || {}, fx: d.fx || {}, history: d.history || [], updated: d.updated || '', fetched: Date.now() };
+    if (Array.isArray(d.brokers) && !rest.length && !(await DB.all('ops')).some(o => o.op === 'settings' && o.settings && o.settings.brokers)) { S.prefs.brokers = d.brokers; await persist('prefs'); }
     await persist('inv');
     if (force) toast('✓ 股價已更新');
   } catch (e) { if (force) toast('更新失敗：' + e.message, 4500); }
   S.invLoading = false; if (S.page === 'inv') renderInv();
+}
+/** 股票帳戶：設定裡建的＋交易裡出現過的 */
+function brokerList() {
+  const out = (S.prefs.brokers || []).map(b => b.name).filter(Boolean);
+  (S.inv.lots || []).forEach(l => { if (l.broker && !out.includes(l.broker)) out.push(l.broker); });
+  return out;
+}
+async function saveBrokers(list) {
+  S.prefs.brokers = list; await persist('prefs');
+  await DB.put('ops', { op: 'settings', settings: { brokers: list } });
+}
+function openBroker(name) {
+  const b = (S.prefs.brokers || []).find(x => x.name === name) || (name ? { name, note: '' } : null);
+  const n = name ? (S.inv.lots || []).filter(l => l.broker === name).length : 0;
+  openSheet('detail', b ? '編輯股票帳戶' : '新增股票帳戶', `
+    <div class="form-group">
+      <div class="frow"><label>帳戶名稱</label><input id="bk-name" value="${esc(b ? b.name : '')}" placeholder="例：永豐、Fidelity、樂天證券"></div>
+      <div class="frow"><label>備註</label><input id="bk-note" value="${esc(b ? b.note || '' : '')}" placeholder="帳號末幾碼、用途…（選填）"></div>
+    </div>
+    ${b && n ? `<div class="hint">這個帳戶有 ${n} 筆交易，改名會一起更新。要刪除帳戶請先刪掉或移走裡面的持股。</div>` : ''}
+    <div style="display:flex;gap:10px;margin-top:12px">${b ? `<button class="btn danger" id="bk-del" ${n ? 'disabled' : ''}>刪除</button>` : ''}<button class="btn" style="flex:1" id="bk-save">儲存</button></div>`);
+  if (!b) setTimeout(() => $('#bk-name').focus(), 250);
+  $('#bk-save').onclick = async () => {
+    const nm = $('#bk-name').value.trim(); if (!nm) return toast('請填帳戶名稱');
+    if (nm !== (b && b.name) && brokerList().includes(nm)) return toast('已經有這個帳戶');
+    // 保持原本的順序：改名就原地替換，新增接在最後
+    const list = brokerList().map(x => (S.prefs.brokers || []).find(y => y.name === x) || { name: x, note: '' });
+    const item = { name: nm, note: $('#bk-note').value.trim() };
+    const i = b ? list.findIndex(x => x.name === b.name) : -1;
+    if (i >= 0) list[i] = item; else list.push(item);
+    if (b && nm !== b.name) {
+      (S.inv.lots || []).forEach(l => { if (l.broker === b.name) l.broker = nm; });
+      await persist('inv'); await DB.put('ops', { op: 'invBroker', from: b.name, to: nm });
+    }
+    await saveBrokers(list); closeSheet('detail'); renderInv(); renderSync(); sync(); toast('已儲存');
+  };
+  if (b) $('#bk-del').onclick = async () => {
+    if (n) return;
+    if (!confirm(`刪除「${b.name}」？`)) return;
+    await saveBrokers((S.prefs.brokers || []).filter(x => x.name !== b.name)); closeSheet('detail'); renderInv(); renderSync(); sync(); toast('已刪除');
+  };
 }
 function invMoney(v, cur) {
   if (cur === 'USD') return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -3828,7 +3871,7 @@ function renderInv() {
   const esppY = (S.inv.lots || []).filter(l => l.type === 'ESPP購買' && l.date.startsWith(yr));
   const esppInc = esppY.reduce((a, l) => a + l.shares * Math.max(0, (l.fmv || 0) - l.price) * (l.fx || fxOf(l.currency || 'USD')), 0);
   const needFmv = (S.inv.lots || []).filter(l => l.type === 'RSU歸屬' && l.date <= today() && !l.fmv);
-  const brokers = [...new Set(held.map(g => g.broker))];
+  const brokers = brokerList().concat([...new Set(held.map(g => g.broker))].filter(b => !brokerList().includes(b)));
   const noFx = held.some(g => !fxOf(g.currency)) || !fxOf(D);
   el.innerHTML = `
     <div class="hero inv-hero">
@@ -3843,13 +3886,15 @@ function renderInv() {
     </div>
     ${noFx && held.length ? `<div class="hint warn-hint">還沒有匯率，${D !== 'JPY' ? '換算' : ''}金額可能不完整，連線後按「更新」。</div>` : ''}
     <div class="inv-actions"><button class="btn sm" id="inv-hold">${icon('wallet')} 目前持股</button><button class="btn sm sec" id="inv-add">${icon('plus')} 新增交易</button><button class="btn sm sec" id="inv-sched">${icon('calendar')} RSU 排程</button></div>
-    ${!held.length && !unvested.length ? `<div class="card empty"><span class="em">${icon('trend')}</span>還沒有持股<br><small>按「輸入目前持股」填每一檔現在有幾股就可以開始。股價會每天自動更新，未來的 RSU 用「RSU 歸屬排程」。</small></div>` : ''}
+    ${!held.length && !unvested.length && !brokers.length ? `<div class="card empty"><span class="em">${icon('trend')}</span>還沒有持股<br><small>按「輸入目前持股」填每一檔現在有幾股就可以開始。股價會每天自動更新，未來的 RSU 用「RSU 歸屬排程」。</small></div>` : ''}
     ${brokers.map(b => { const gs = held.filter(g => g.broker === b).sort((x, y) => invConv(y.value, y.currency, 'JPY') - invConv(x.value, x.currency, 'JPY'));
       const sub = gs.reduce((a, g) => a + invConv(g.value, g.currency, D), 0);
-      return `<div class="sec-h"><h2>${esc(b)}</h2><span class="faint num">${invMoney(sub, D)}</span></div>
-      <div class="tx-group">${gs.map(g => `<button class="tx inv-row" data-hold="${esc(g.key)}"><div class="ico" style="background:${hashTint(g.symbol)}"><span class="sym">${esc(g.symbol.replace(/^.*:/, '').slice(0, 4))}</span></div>
+      return `<div class="sec-h inv-broker-h"><h2>${esc(b)}</h2><span><span class="faint num">${gs.length ? invMoney(sub, D) : ''}</span>　<button class="link" data-bk="${esc(b)}">編輯</button></span></div>
+      ${gs.length ? '' : `<div class="card empty" style="padding:16px"><small>這個帳戶還沒有持股</small><br><button class="link" data-bkhold="${esc(b)}">＋ 輸入目前持股</button></div>`}
+      <div class="tx-group ${gs.length ? '' : 'hidden'}">${gs.map(g => `<button class="tx inv-row" data-hold="${esc(g.key)}"><div class="ico" style="background:${hashTint(g.symbol)}"><span class="sym">${esc(g.symbol.replace(/^.*:/, '').slice(0, 4))}</span></div>
         <div class="mid"><b>${esc(g.name || g.symbol)}</b><small>${esc(g.symbol)}・${+g.shares.toFixed(4)} 股・${g.price ? invMoney(g.price, g.currency) + (g.manual ? '（手動）' : '') : '<span class="exp">沒有股價</span>'}</small></div>
         <div class="amt"><b class="num">${invMoney(g.value, g.currency)}</b><small class="num ${plCls(g.pl)}">${g.cost && !g.noCost ? `${sgn(g.pl, g.currency)}（${invPct(g.pl, g.cost).toFixed(1)}%）` : ''}</small></div></button>`).join('')}</div>`; }).join('')}
+    <button class="inv-add-broker" id="inv-addBroker">${icon('plus')} 新增股票帳戶</button>
     ${unvested.length || vestY.length || esppY.length || needFmv.length ? `<div class="card inv-rsu"><h3>RSU・ESPP</h3>
       ${needFmv.length ? `<button class="inv-warn" data-lot="${esc(needFmv[0].id)}">${icon('alert')}<span>${needFmv.length} 筆 RSU 已歸屬但還沒填歸屬日市價／預扣股數，點這裡補上</span></button>` : ''}
       ${unvested.length ? `<div class="stat-row"><span>下次歸屬</span><b class="num">${fmtMD(unvested[0].date)}・${unvested[0].shares} 股</b></div>
@@ -3863,9 +3908,12 @@ function renderInv() {
   $$('[data-ic]', el).forEach(b => b.onclick = () => { S.prefs.invCur = b.dataset.ic; persist('prefs'); renderInv(); });
   $('#inv-refresh').onclick = () => invLoad(true);
   $('#inv-add').onclick = () => openLot({ type: '買入' }, true);
-  $('#inv-hold').onclick = () => openLot({ type: '持股', broker: brokers.length === 1 ? brokers[0] : '' }, true);
+  $('#inv-hold').onclick = () => openLot({ type: '持股', broker: brokers[0] || '' }, true);
   $('#inv-sched').onclick = () => openRsuSched();
   $$('[data-hold]', el).forEach(b => b.onclick = () => openHolding(b.dataset.hold));
+  $$('[data-bk]', el).forEach(b => b.onclick = () => openBroker(b.dataset.bk));
+  $$('[data-bkhold]', el).forEach(b => b.onclick = () => openLot({ type: '持股', broker: b.dataset.bkhold }, true));
+  $('#inv-addBroker').onclick = () => openBroker();
   $$('[data-lot]', el).forEach(b => b.onclick = () => openLot((S.inv.lots || []).find(l => l.id === b.dataset.lot)));
 }
 function openHolding(key) {
@@ -3885,9 +3933,18 @@ function openHolding(key) {
     </div>
     <div class="form-group"><div class="frow"><label>手動股價</label><input id="hp-price" inputmode="decimal" placeholder="${p.auto ? '自動抓得到，不用填' : 'GOOGLEFINANCE 抓不到時填這裡'}" value="${p.manual || ''}"><button class="mini-btn" id="hp-save">儲存</button></div></div>
     <div class="set-h">交易紀錄</div>
-    <div class="form-group">${g.lots.slice().reverse().map(l => `<button class="store-item" data-lot="${esc(l.id)}"><div class="ico">${icon(LOT_T[l.type] ? LOT_T[l.type][1] : 'tag')}</div><div><b>${LOT_T[l.type] ? LOT_T[l.type][0] : esc(l.type)}・${l.shares} 股</b><small>${l.date}・${l.type === 'RSU歸屬' ? `市價 ${invMoney(l.fmv || 0, C)}${l.withheld ? `・預扣 ${l.withheld} 股` : ''}` : l.type === 'ESPP購買' ? `購買價 ${invMoney(l.price, C)}・市價 ${invMoney(l.fmv || 0, C)}` : l.type === '持股' ? (l.price ? '平均成本 ' + invMoney(l.price, C) : '未填成本') : invMoney(l.price, C)}${l.note ? '・' + esc(l.note) : ''}</small></div></button>`).join('')}</div>
-    <div style="display:flex;gap:10px"><button class="btn sec" style="flex:1" id="hp-buy">${icon('plus')} 買入／歸屬</button><button class="btn sec" style="flex:1" id="hp-sell">${icon('transfer')} 賣出</button></div>`);
+    <div class="form-group">${g.lots.slice().reverse().map(l => `<button class="store-item" data-lot="${esc(l.id)}"><div class="ico">${icon(LOT_T[l.type] ? LOT_T[l.type][1] : 'tag')}</div><div><b>${LOT_T[l.type] ? LOT_T[l.type][0] : esc(l.type)}・${l.shares} 股</b><small>${l.date}・${l.type === 'RSU歸屬' ? `市價 ${invMoney(l.fmv || 0, C)}${l.withheld ? `・預扣 ${l.withheld} 股` : ''}` : l.type === 'ESPP購買' ? `購買價 ${invMoney(l.price, C)}・市價 ${invMoney(l.fmv || 0, C)}` : l.type === '持股' ? (l.price ? '平均成本 ' + invMoney(l.price, C) : '未填成本') : invMoney(l.price, C)}${l.note ? '・' + esc(l.note) : ''}</small></div><span class="inv-lot-edit">${icon('pencil')}</span></button>`).join('')}</div>
+    <div class="hint" style="margin:-6px 4px 12px">點一筆可以編輯股數、成本或刪除。</div>
+    <div style="display:flex;gap:10px;margin-bottom:10px"><button class="btn sec" style="flex:1" id="hp-buy">${icon('plus')} 買入／歸屬</button><button class="btn sec" style="flex:1" id="hp-sell">${icon('transfer')} 賣出</button></div>
+    <button class="btn danger" id="hp-delAll" style="width:100%">${icon('trash')} 刪除這檔股票</button>`);
   $$('#d-body [data-lot]').forEach(b => b.onclick = () => openLot(g.lots.find(l => l.id === b.dataset.lot)));
+  $('#hp-delAll').onclick = async () => {
+    if (!confirm(`刪除「${g.name || g.symbol}」在 ${g.broker} 的全部 ${g.lots.length} 筆紀錄？`)) return;
+    const ids = new Set(g.lots.map(l => l.id));
+    S.inv.lots = (S.inv.lots || []).filter(l => !ids.has(l.id)); await persist('inv');
+    for (const id of ids) await DB.put('ops', { op: 'invDel', id });
+    closeSheet('detail'); renderInv(); renderSync(); sync(); toast('已刪除');
+  };
   $('#hp-buy').onclick = () => openLot({ broker: g.broker, symbol: g.symbol, name: g.name, currency: C, type: /fidelity/i.test(g.broker) ? 'RSU歸屬' : '買入' }, true);
   $('#hp-sell').onclick = () => openLot({ broker: g.broker, symbol: g.symbol, name: g.name, currency: C, type: '賣出', price: g.price }, true);
   $('#hp-save').onclick = async () => {
@@ -3905,11 +3962,13 @@ async function saveLot(l) {
 function openLot(l, preset) {
   const isNew = !l || !l.id;
   l = Object.assign({ type: (S.inv.lots || []).length ? '買入' : '持股', broker: '', symbol: '', name: '', currency: '', date: today(), shares: '', price: '', fmv: '', withheld: '', fx: '', note: '' }, l || {});
-  const brokers = [...new Set(['Fidelity', '永豐'].concat((S.inv.lots || []).map(x => x.broker)).filter(Boolean))];
+  const brokers = brokerList();
+  if (l.broker && !brokers.includes(l.broker)) brokers.push(l.broker);
   openSheet('detail', isNew ? '新增交易' : '編輯交易', `
     <div class="seg" id="lt-type" style="margin-bottom:12px">${Object.keys(LOT_T).map(k => `<button data-lt="${k}" class="${k === l.type ? 'on' : ''}">${{ '持股': '目前持股', 'RSU歸屬': 'RSU', 'ESPP購買': 'ESPP' }[k] || LOT_T[k][0]}</button>`).join('')}</div>
     <div class="form-group">
-      <div class="frow"><label>券商</label><input id="lt-broker" list="lt-brokers" value="${esc(l.broker)}" placeholder="Fidelity、永豐…"><datalist id="lt-brokers">${brokers.map(b => `<option value="${esc(b)}">`).join('')}</datalist></div>
+      <div class="frow"><label>股票帳戶</label><select id="lt-brokerSel">${brokers.map(b => `<option ${b === l.broker ? 'selected' : ''}>${esc(b)}</option>`).join('')}<option value="__new" ${!brokers.length ? 'selected' : ''}>＋ 新增帳戶…</option></select></div>
+      <div class="frow ${brokers.length ? 'hidden' : ''}" id="lt-brokerNew"><label>新帳戶名稱</label><input id="lt-broker" value="" placeholder="例：永豐、Fidelity"></div>
       <div class="frow"><label>代號</label><input id="lt-sym" value="${esc(l.symbol)}" placeholder="台股填數字（2330），美股填代號" autocapitalize="characters"></div>
       <div class="frow"><label>名稱</label><input id="lt-name" value="${esc(l.name)}" placeholder="選填，會自動抓"></div>
       <div class="frow"><label>幣別</label><select id="lt-cur">${['USD', 'TWD', 'JPY'].map(c => `<option ${c === (l.currency || invCurOf(l.symbol)) ? 'selected' : ''}>${c}</option>`).join('')}</select></div>
@@ -3944,15 +4003,24 @@ function openLot(l, preset) {
   $('#lt-cur').onchange = upd;
   $('#lt-sym').onchange = () => { const s = normSym($('#lt-sym').value); $('#lt-sym').value = s; $('#lt-cur').value = invCurOf(s); const p = (S.inv.prices || {})[s]; if (p && p.name && !$('#lt-name').value) $('#lt-name').value = p.name; upd(); };
   upd();
-  if (isNew && !preset) setTimeout(() => $('#lt-broker').focus(), 250);
+  $('#lt-brokerSel').onchange = () => { const nw = $('#lt-brokerSel').value === '__new'; $('#lt-brokerNew').classList.toggle('hidden', !nw); if (nw) $('#lt-broker').focus(); };
+  if (isNew && !preset) setTimeout(() => $('#lt-sym').focus(), 250);
+  let saving = false;
   $('#lt-save').onclick = async () => {
+    if (saving) return;
     const sym = normSym($('#lt-sym').value), sh = parseFloat($('#lt-shares').value), cur = $('#lt-cur').value;
+    const bsel = $('#lt-brokerSel').value, broker = bsel === '__new' ? $('#lt-broker').value.trim() : bsel;
+    if (!broker) return toast('請選股票帳戶');
     if (!sym) return toast('請填代號');
     if (!(sh > 0)) return toast('請填股數');
-    const n = { id: l.id || newId(), type, broker: $('#lt-broker').value.trim(), symbol: sym, name: $('#lt-name').value.trim(), currency: cur, date: $('#lt-date').value || today(),
+    const n = { id: l.id || newId(), type, broker, symbol: sym, name: $('#lt-name').value.trim(), currency: cur, date: $('#lt-date').value || today(),
       shares: sh, price: type === 'RSU歸屬' ? 0 : parseFloat($('#lt-price').value) || 0, fmv: parseFloat($('#lt-fmv').value) || 0, withheld: parseFloat($('#lt-wh').value) || 0,
       fx: parseFloat($('#lt-fx').value) || 0, note: $('#lt-note').value.trim() };
     if (type !== 'RSU歸屬' && type !== '持股' && !n.price) return toast('請填' + $('#lt-priceL').textContent);
+    // 同帳戶同代號已經有「目前持股」：改成更新那一筆，不要重複
+    if (isNew && type === '持股') { const ex = (S.inv.lots || []).find(x => x.type === '持股' && x.broker === broker && x.symbol === sym); if (ex && confirm(`${broker} 已經有 ${sym} 的目前持股（${ex.shares} 股），要改成 ${sh} 股嗎？\n（取消＝另外再加一筆）`)) n.id = ex.id; }
+    saving = true; $('#lt-save').disabled = true;
+    if (bsel === '__new' && !(S.prefs.brokers || []).some(x => x.name === broker)) await saveBrokers((S.prefs.brokers || []).concat([{ name: broker, note: '' }]));
     if (cur !== 'JPY' && !n.fx && n.date <= today() && canOnline()) { try { n.fx = (await api('rate', { date: n.date, currency: cur }, 15000)).rate; } catch (e) {} }
     const fresh = !(S.inv.prices || {})[sym];
     await saveLot(n); closeSheet('detail'); renderInv(); renderSync(); toast(isNew ? '已新增' : '已更新');
@@ -3970,7 +4038,7 @@ function openRsuSched() {
   openSheet('detail', 'RSU 歸屬排程', `
     <div class="hint" style="margin:4px 4px 12px">依 Grant 的歸屬時程一次建立每一期，日期還沒到的列在「未歸屬」。已經歸屬、現在還持有的股數請用「輸入目前持股」。到期後點該筆補上歸屬日市價與預扣股數。</div>
     <div class="form-group">
-      <div class="frow"><label>券商</label><input id="rs-broker" value="${esc(last.broker || 'Fidelity')}"></div>
+      <div class="frow"><label>股票帳戶</label><select id="rs-broker">${(() => { const bl = brokerList(); const def = last.broker || bl.find(x => /fidelity/i.test(x)) || bl[0] || 'Fidelity'; if (!bl.includes(def)) bl.push(def); return bl.map(x => `<option ${x === def ? 'selected' : ''}>${esc(x)}</option>`).join(''); })()}</select></div>
       <div class="frow"><label>代號</label><input id="rs-sym" value="${esc(last.symbol || '')}" placeholder="例：GOOGL" autocapitalize="characters"></div>
       <div class="frow"><label>每期股數</label><input id="rs-n" placeholder="例：28,28,27（每期不同用逗號分開）"></div>
       <div class="frow"><label>第一次歸屬日</label><input type="date" id="rs-d" value="${today()}"></div>
@@ -3997,8 +4065,9 @@ function openRsuSched() {
 }
 
 // ---------- 版本更新紀錄 ----------
-const APP_VER = '4.2.1';
+const APP_VER = '4.3';
 const CHANGELOG = [
+  ['4.3', '2026-11-26', ['台股（含 0050、0056、00878 等 ETF）改用證交所報價，代號開頭的 0 不會再不見', '可以新增、改名、刪除股票帳戶', '個股可以刪除整檔；每筆持股旁邊有編輯圖示；同一檔重複輸入目前持股會問要不要更新', '電腦版詳情的文字不再貼邊']],
   ['4.2.1', '2026-11-26', ['「輸入目前持股」：直接填每檔現在幾股（平均成本選填），不用補過去的交易', 'RSU 歸屬排程每期股數可以不同（例：28,28,27）']],
   ['4.2', '2026-11-26', ['新增「資產」頁：台股、RSU、ESPP 持股，股價每天自動更新（Google 試算表 GOOGLEFINANCE），也可以手動按更新', '總資產可切換日圓／台幣／美金，個股用原本的幣別顯示', 'RSU 歸屬排程、未歸屬股數與估值；今年 RSU 歸屬所得與 ESPP 折扣利益（參考）', '資產走勢圖（每天記一筆總市值）']],
   ['4.1', '2026-11-26', ['AI 辨識改成獨立的浮動按鈕（長按＝手動記帳），dock 只放頁面', 'dock 順序跟左右滑動一致，可在「設定 → 外觀 → 頁面順序」自訂', 'モバイルSuica 履歷 PDF 直接匯入（不用 AI）', '出差可以「結案」，結案後在分析頁隱藏', '首頁卡片拿掉淨資產', '電腦／iPad 橫向：帳戶標籤會換行全部顯示、最近紀錄移到「本月花在哪」下面', '移除 Money Forward ME 匯入', '新增這個版本更新紀錄']],
