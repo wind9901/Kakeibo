@@ -167,7 +167,7 @@ main { padding: 4px 16px 0; }
 .hero .lbl { font-size: 13px; opacity: .78; display: flex; justify-content: space-between; }
 .hero .big { font-size: 38px; font-weight: 800; margin: 2px 0 14px; letter-spacing: -.03em; }
 .hero .big small { font-size: 20px; font-weight: 700; margin-right: 2px; opacity: .9; }
-.hero .trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; position: relative; z-index: 1;
+.hero .trio { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; position: relative; z-index: 1;
   background: rgba(255,255,255,.1); border-radius: 16px; padding: 10px 12px; }
 .hero .trio div { font-size: 11.5px; opacity: .92; }
 .hero .trio b { display: block; font-size: 15px; font-weight: 700; margin-top: 2px; }
@@ -247,11 +247,23 @@ html.glass .quick .q.prim { background: color-mix(in srgb, var(--brand) 82%, tra
 .seg button.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 
 /* ---------- Tab bar ---------- */
-.tabbar { position: fixed; left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; height: 66px;
-  display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; background: color-mix(in srgb, var(--surface) 92%, transparent);
+.tabbar { position: fixed; left: 12px; right: 90px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 30; height: 66px;
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; align-items: center; background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(18px) saturate(1.5); -webkit-backdrop-filter: blur(18px) saturate(1.5); border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,.12); border: 1px solid var(--line); }
 .tabbar button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 650; color: var(--ink-3); padding: 0; height: 100%; justify-content: center; }
 .tabbar button.on { color: var(--brand-ink); }
+/* AI 辨識：獨立的浮動按鈕（長按＝手動記帳） */
+.ai-fab { position: fixed; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); z-index: 31; width: 66px; height: 66px; border-radius: 50%; border: 0;
+  background: var(--brand); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 45%, transparent), 0 2px 6px rgba(0,0,0,.12);
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; transition: transform .15s; }
+.ai-fab svg.i { width: 26px; height: 26px; stroke-width: 2.1; }
+.ai-fab small { font-size: 10px; font-weight: 800; letter-spacing: .5px; margin-top: 1px; opacity: .92; }
+.ai-fab.press { transform: scale(.9); }
+html.glass .ai-fab { background: color-mix(in srgb, var(--brand) 80%, transparent); backdrop-filter: blur(var(--glass-blur)) saturate(1.7); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.7);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 8px 24px color-mix(in srgb, var(--brand) 40%, transparent); }
+:root[data-mode="dark"] .ai-fab { color: #0b1514; }
+@media (prefers-color-scheme: dark) { :root:not([data-mode="light"]) .ai-fab { color: #0b1514; } }
 .tabbar .fab { width: 56px; height: 56px; border-radius: 20px; margin: -26px auto 0; background: linear-gradient(140deg, var(--hero-1), var(--brand-2)); color: #fff;
   display: grid; place-items: center; box-shadow: 0 8px 22px rgba(15,76,92,.4); border: 4px solid var(--bg); }
 .tabbar .fab svg.i { width: 26px; height: 26px; stroke-width: 2.1; }
@@ -493,7 +505,10 @@ kbd { font-family: var(--num); font-size: 11px; font-weight: 700; min-width: 20p
   .ana-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 18px; align-items: start; }
   .ana-grid .span2 { grid-column: 1 / -1; }
   .rep-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: start; }
-  .tabbar { left: 50%; right: auto; width: 480px; transform: translateX(-50%); }
+  .tabbar { left: 50%; right: auto; width: 440px; transform: translateX(calc(-50% - 40px)); }
+  .inv-wrap { max-width: 760px; margin: 0 auto; }
+  .ai-fab { right: auto; left: calc(50% + 192px); }
+  .chips { flex-wrap: wrap; overflow: visible; }
   /* 表單改成置中對話框 */
   .sheet { left: 50%; right: auto; top: 50%; bottom: auto; width: min(580px, calc(100vw - 48px)); border-radius: 28px;
     max-height: min(900px, calc(100vh - 48px)); transform: translate(-50%, -47%) scale(.97); opacity: 0; pointer-events: none;
@@ -511,7 +526,7 @@ kbd { font-family: var(--num); font-size: 11px; font-weight: 700; min-width: 20p
 /* iPad 橫向 / Mac：側邊欄 + 明細雙欄 */
 @media (min-width: 1000px) {
   body { padding-left: 252px; padding-bottom: 40px; }
-  .tabbar { display: none; }
+  .tabbar, .ai-fab { display: none; }
   #toast { bottom: 32px; left: calc(50% + 126px); }
   .sidebar { display: flex; flex-direction: column; gap: 6px; position: fixed; top: 0; bottom: 0; left: 0; width: 252px; z-index: 40;
     padding: calc(18px + env(safe-area-inset-top)) 16px 18px; background: var(--surface); border-right: 1px solid var(--line); }
@@ -772,6 +787,44 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
 .btn.danger:not(.sm) { width: auto; padding-inline: 20px; }
 .icon-btn.sm { width: 34px; height: 34px; flex: none; }
 .icon-btn.sm svg { width: 17px; height: 17px; }
+/* ---- 資產 ---- */
+.inv-hero .lbl { align-items: center; }
+.inv-cur { display: inline-flex; background: rgba(255,255,255,.14); border-radius: 99px; padding: 2px; gap: 2px; }
+.inv-cur button { border: 0; background: none; color: #fff; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 99px; opacity: .8; }
+.inv-cur button.on { background: rgba(255,255,255,.92); color: var(--hero-1); opacity: 1; }
+.inv-trio { grid-template-columns: repeat(3, 1fr) !important; }
+.inv-trio b small { font-size: 11px; font-weight: 600; opacity: .85; }
+.inv-upd { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; font-size: 11.5px; opacity: .85; }
+.inv-upd button { display: inline-flex; align-items: center; gap: 4px; border: 0; background: rgba(255,255,255,.16); color: #fff; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 99px; }
+.inv-upd button svg.i { width: 14px; height: 14px; }
+.inv-upd button:disabled { opacity: .5; }
+.inv-actions { display: flex; gap: 8px; margin: 14px 2px 4px; }
+.inv-actions .btn { flex: 1; justify-content: center; }
+.inv-row .ico .sym { font-size: 10.5px; font-weight: 800; letter-spacing: -.02em; color: var(--ink); }
+.inv-row .amt small { font-weight: 650; }
+.inv-rsu .inv-sched { display: grid; gap: 2px; margin: 6px 0 10px; }
+.inv-rsu .inv-sched button { display: grid; grid-template-columns: 96px 1fr auto; gap: 8px; border: 0; background: var(--bg); border-radius: 10px; padding: 7px 10px; font-size: 13px; text-align: left; color: var(--ink); }
+.inv-warn { display: flex; gap: 8px; align-items: center; width: 100%; border: 0; text-align: left; background: color-mix(in srgb, var(--exp, #d9534f) 12%, transparent); color: var(--ink); border-radius: 12px; padding: 9px 12px; font-size: 13px; margin-bottom: 10px; }
+.inv-warn svg.i { width: 18px; height: 18px; flex: none; }
+.inv-chart { width: 100%; height: 150px; display: block; margin-top: 8px; }
+.inv-chart-l { display: flex; justify-content: space-between; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.warn-hint { margin: 10px 4px 0; }
+/* ---- 版本紀錄、頁面順序 ---- */
+.log-v { padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.log-v:last-child { border-bottom: 0; }
+.log-v h4 { margin: 0 0 6px; font-size: 15.5px; display: flex; gap: 8px; align-items: baseline; }
+.log-v h4 small { color: var(--muted); font-weight: 500; font-size: 12.5px; }
+.log-v ul { margin: 0; padding-left: 18px; font-size: 14px; line-height: 1.55; color: var(--ink-2); }
+.log-v .cur { font-size: 11px; background: var(--brand); color: #fff; border-radius: 99px; padding: 1px 8px; font-weight: 700; }
+.ord-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.ord-row:last-child { border-bottom: 0; }
+.ord-row .n { width: 22px; color: var(--muted); font-weight: 700; }
+.ord-row .grow { flex: 1; display: flex; align-items: center; gap: 8px; font-weight: 650; }
+.ord-row .grow svg.i { width: 20px; height: 20px; color: var(--brand-ink); }
+.ord-row button { width: 36px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); display: grid; place-items: center; }
+.ord-row button:disabled { opacity: .3; }
+.ord-row button svg.i { width: 17px; height: 17px; }
+.trip-closed-toggle { display: block; margin: 4px auto 14px; }
 /* ---- 出差（每一趟） ---- */
 .trip-card { padding: 14px 16px; }
 .trip-card .tc-h { display: flex; align-items: flex-start; gap: 10px; }
@@ -804,6 +857,7 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
     <button data-tab="ana"><span data-icon="chart"></span>分析<kbd>3</kbd></button>
     <button data-tab="rep"><span data-icon="sparkles"></span>報告<kbd>4</kbd></button>
     <button data-tab="car"><span data-icon="car"></span>汽車<kbd>5</kbd></button>
+    <button data-tab="inv"><span data-icon="trend"></span>資產<kbd>6</kbd></button>
   </nav>
   <div class="side-foot">
     <div class="drop-hint"><span data-icon="camera"></span><span>收據、網購截圖、IC 卡履歷或 PDF 可以直接<b>拖曳</b>到視窗，或按 <kbd>⌘</kbd><kbd>V</kbd> 貼上</span></div>
@@ -834,7 +888,6 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
       <div class="trio">
         <div>收入<b class="num" id="h-inc"></b></div>
         <div>結餘<b class="num" id="h-net"></b></div>
-        <div>淨資產<b class="num" id="h-asset"></b></div>
       </div>
       <div class="hero-trip hidden" id="h-trip"></div>
     </div>
@@ -851,8 +904,8 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
     <div class="sec-h first"><h2>帳戶</h2><span><button class="link" id="lnkAccAdd">＋ 新增</button>　<button class="link" id="lnkAccMgr">管理</button></span></div>
     <div class="chips" id="accTabs" style="margin-bottom:10px"></div>
     <div class="hscroll" id="accScroll"></div>
-    <div class="sec-h"><h2>最近紀錄</h2><button class="link" data-goto="list">查看全部</button></div>
-    <div id="recent"></div>
+    <div id="recentWrap"><div class="sec-h"><h2>最近紀錄</h2><button class="link" data-goto="list">查看全部</button></div>
+    <div id="recent"></div></div>
     </div>
    </div>
   </section>
@@ -956,6 +1009,9 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
     <div id="c-list"></div>
   </section>
 
+  <!-- ===== 資產 ===== -->
+  <section class="page" id="pg-inv"><div class="inv-wrap" id="inv-body"></div></section>
+
   <!-- ===== 報告 ===== -->
   <section class="page" id="pg-rep">
     <div class="seg rep-seg" style="margin-bottom:12px"><button data-goana="daily">日常開銷</button><button data-goana="trip">出差</button><button class="on">AI 報告</button></div>
@@ -977,13 +1033,8 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
   </section>
 </main>
 
-<nav class="tabbar" id="tabbar">
-  <button class="on" data-tab="home"><span data-icon="home"></span>首頁</button>
-  <button data-tab="list"><span data-icon="list"></span>明細</button>
-  <button data-tab="add" aria-label="AI 辨識（長按：手動記帳）"><div class="fab" data-icon="camera"></div><span class="fab-lbl">AI 辨識</span></button>
-  <button data-tab="car"><span data-icon="car"></span>汽車</button>
-  <button data-tab="ana"><span data-icon="chart"></span>分析</button>
-</nav>
+<nav class="tabbar" id="tabbar"></nav>
+<button class="ai-fab" id="aiFab" aria-label="AI 辨識（長按：手動記帳）"><span data-icon="camera"></span><small>AI</small></button>
 
 <!-- ===== 記帳 Sheet ===== -->
 <div class="scrim" id="scrim-entry"></div>
@@ -1093,8 +1144,8 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
   <div class="set-wrap" id="set-wrap">
     <aside class="set-nav">
       <div class="set-nav-h"><h2>設定</h2><button class="x set-x" data-close="set" data-icon="x"></button></div>
-      <div class="set-nav-b"><div class="set-group"><button class="set-item" data-pane="conn"><i style="background:#34c759" data-icon="cloud"></i><span class="lbl">連線與同步</span><span class="v" id="nv-conn"></span><span class="chev">›</span></button><button class="set-item" data-pane="ai"><i style="background:#5e5ce6" data-icon="sparkles"></i><span class="lbl">AI 辨識</span><span class="v" id="nv-ai"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="acc"><i style="background:#0a84ff" data-icon="bank"></i><span class="lbl">帳戶</span><span class="v" id="nv-acc"></span><span class="chev">›</span></button><button class="set-item" data-pane="cat"><i style="background:#ff9f0a" data-icon="tag"></i><span class="lbl">記帳分類</span><span class="v" id="nv-cat"></span><span class="chev">›</span></button><button class="set-item" data-pane="period"><i style="background:#ff375f" data-icon="calendar"></i><span class="lbl">記帳區間</span><span class="v" id="nv-period"></span><span class="chev">›</span></button><button class="set-item" data-pane="look"><i style="background:#af52de" data-icon="sparkles"></i><span class="lbl">外觀</span><span class="v" id="nv-look"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="import"><i style="background:#30b0c7" data-icon="download"></i><span class="lbl">匯入資料</span><span class="v" id="nv-import"></span><span class="chev">›</span></button><button class="set-item" data-pane="offline"><i style="background:#8e8e93" data-icon="cloudOff"></i><span class="lbl">離線</span><span class="v" id="nv-offline"></span><span class="chev">›</span></button><button class="set-item" data-pane="about"><i style="background:#64748b" data-icon="info"></i><span class="lbl">其他</span><span class="v" id="nv-about"></span><span class="chev">›</span></button></div>
-        <div class="hint" style="text-align:center;margin:18px 0 0">AI 記帳 v4.0.1</div>
+      <div class="set-nav-b"><div class="set-group"><button class="set-item" data-pane="conn"><i style="background:#34c759" data-icon="cloud"></i><span class="lbl">連線與同步</span><span class="v" id="nv-conn"></span><span class="chev">›</span></button><button class="set-item" data-pane="ai"><i style="background:#5e5ce6" data-icon="sparkles"></i><span class="lbl">AI 辨識</span><span class="v" id="nv-ai"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="acc"><i style="background:#0a84ff" data-icon="bank"></i><span class="lbl">帳戶</span><span class="v" id="nv-acc"></span><span class="chev">›</span></button><button class="set-item" data-pane="cat"><i style="background:#ff9f0a" data-icon="tag"></i><span class="lbl">記帳分類</span><span class="v" id="nv-cat"></span><span class="chev">›</span></button><button class="set-item" data-pane="period"><i style="background:#ff375f" data-icon="calendar"></i><span class="lbl">記帳區間</span><span class="v" id="nv-period"></span><span class="chev">›</span></button><button class="set-item" data-pane="look"><i style="background:#af52de" data-icon="sparkles"></i><span class="lbl">外觀</span><span class="v" id="nv-look"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="import"><i style="background:#30b0c7" data-icon="download"></i><span class="lbl">匯入資料</span><span class="v" id="nv-import"></span><span class="chev">›</span></button><button class="set-item" data-pane="offline"><i style="background:#8e8e93" data-icon="cloudOff"></i><span class="lbl">離線</span><span class="v" id="nv-offline"></span><span class="chev">›</span></button><button class="set-item" data-pane="log"><i style="background:#32ade6" data-icon="history"></i><span class="lbl">版本更新紀錄</span><span class="v" id="nv-log"></span><span class="chev">›</span></button><button class="set-item" data-pane="about"><i style="background:#64748b" data-icon="info"></i><span class="lbl">其他</span><span class="v" id="nv-about"></span><span class="chev">›</span></button></div>
+        <div class="hint" style="text-align:center;margin:18px 0 0" id="verLbl">AI 記帳</div>
       </div>
     </aside>
     <section class="set-main">
@@ -1156,16 +1207,15 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
     <div class="frow"><div class="grow">液態玻璃效果<small>卡片、選單、底部 dock 變成半透明的毛玻璃</small></div><label class="switch"><input type="checkbox" id="lk-glass"><span></span></label></div>
     <div class="glass-row" id="lk-glassRow"><div class="frow" style="padding:0 0 6px;border:0"><label style="width:auto">透明度</label><b id="lk-glassV" class="num"></b></div><input type="range" id="lk-glassA" min="0" max="100" step="5"><div class="lbls"><span>較實</span><span>較透明</span></div></div>
   </div>
+  <div class="set-h">頁面順序</div>
+  <div class="form-group" id="lk-order"></div>
+  <div class="sec-note" style="margin-bottom:10px">底部 dock 與左右滑動換頁都照這個順序，首頁預設會在打開 App 時顯示。</div>
   <div class="sec-note">外觀設定存在這台裝置上，每台 iPhone、iPad、Mac 可以各自設定。</div>
 </div>
 <div class="set-pane" data-pane="import">
     <div class="form-group">
-      <div class="frow"><div class="grow">Money Forward ME<small>匯入「入出金明細」CSV。重複匯入不會產生重複資料</small></div><button class="mini-btn" id="mf-btn">選擇 CSV</button></div>
+      <div class="frow"><div class="grow">明細匯入<small>信用卡／銀行 CSV・PDF・截圖，交通系 IC 卡 CSV、モバイルSuica 履歷 PDF。重複的略過、漏記的補上</small></div><button class="mini-btn" id="rec-btn">選擇檔案</button></div>
     </div>
-    <div class="form-group">
-      <div class="frow"><div class="grow">信用卡明細比對<small>CSV・PDF・截圖。跟現有紀錄比對，重複的略過、漏記的補上</small></div><button class="mini-btn" id="rec-btn">選擇檔案</button></div>
-    </div>
-    <input type="file" id="mf-file" accept=".csv,text/csv" class="hidden">
 </div>
 <div class="set-pane" data-pane="offline">
     <div class="form-group">
@@ -1173,10 +1223,11 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
     </div>
 
 </div>
+<div class="set-pane" data-pane="log"><div id="log-body"></div></div>
 <div class="set-pane" data-pane="about">
     <div class="btn-row" style="margin-bottom:10px"><button class="btn sec" id="o-sheet">打開試算表</button><button class="btn sec" id="o-sync">立即同步</button></div>
     <button class="btn danger" id="o-reset">清除這支手機上的資料</button>
-    <div class="hint" style="margin-top:14px;text-align:center">AI 記帳 v2・資料以 Google 試算表為準</div>
+    <div class="hint" style="margin-top:14px;text-align:center">資料以 Google 試算表為準</div>
 </div>
         <div class="set-pane" data-pane="dyn" id="set-dyn"></div>
       </div>
