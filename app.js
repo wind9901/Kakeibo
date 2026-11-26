@@ -1631,8 +1631,8 @@ function aiMenu(clip) {
   });
   if (!clip) peekClipboard().then(p => { if (p && $('#sh-detail').classList.contains('on') && $('#d-body [data-ai]')) aiMenu(p); });
 }
-// ---------- 左右滑動切換頁面（手機）：汽車 ‹ 首頁 › 明細 › 分析 ----------
-const SWIPE_ORDER = ['car', 'home', 'list', 'ana'];
+// ---------- 左右滑動切換頁面（手機）：分析 ← 明細 ← 首頁 → 汽車（手指往右滑＝明細） ----------
+const SWIPE_ORDER = ['ana', 'list', 'home', 'car'];
 function pageSlide(to, dir) {
   // dir: 1 = 新頁面從右邊進來（往左滑），-1 = 從左邊進來
   const cur = $('.page.active');

@@ -72,7 +72,7 @@ html.glass body::before { content: ""; position: fixed; inset: -20%; z-index: -1
     radial-gradient(45% 35% at 70% 85%, color-mix(in srgb, var(--income) 26%, transparent), transparent 70%),
     radial-gradient(40% 40% at 10% 80%, color-mix(in srgb, var(--violet) 20%, transparent), transparent 70%); filter: blur(10px); }
 html.glass .card, html.glass .acc-card:not(.tot), html.glass .form-group, html.glass .tx-group, html.glass .search-bar, html.glass .icon-btn, html.glass .pill,
-html.glass .tabbar, html.glass .sheet, html.glass .drawer, html.glass .ai-grid button, html.glass .seg, html.glass .cal, html.glass .store-item, html.glass .q {
+html.glass .tabbar, html.glass .sheet, html.glass .drawer, html.glass .ai-grid button, html.glass .seg, html.glass .cal, html.glass .store-item, html.glass .q:not(.prim) {
   background: color-mix(in srgb, var(--surface) var(--glass-a, 60%), transparent) !important;
   -webkit-backdrop-filter: blur(var(--glass-blur, 22px)) saturate(1.7); backdrop-filter: blur(var(--glass-blur, 22px)) saturate(1.7);
   border: 1px solid color-mix(in srgb, #fff var(--glass-edge, 45%), transparent);
@@ -177,7 +177,8 @@ main { padding: 4px 16px 0; }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 16px 0 4px; }
 .quick button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--ink); padding: 0; }
 .quick .q { width: 58px; height: 58px; border-radius: 20px; display: grid; place-items: center; background: var(--surface); box-shadow: var(--shadow); color: var(--brand-ink); }
-.quick .q.prim { background: var(--brand); color: #fff; box-shadow: 0 6px 16px rgba(15,76,92,.28); }
+.quick .q.prim { background: var(--brand); color: #fff; box-shadow: 0 6px 16px color-mix(in srgb, var(--brand) 35%, transparent); }
+html.glass .quick .q.prim { background: color-mix(in srgb, var(--brand) 82%, transparent); backdrop-filter: blur(var(--glass-blur)) saturate(1.7); -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.7); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 16px color-mix(in srgb, var(--brand) 35%, transparent); }
 .quick .q svg.i { width: 26px; height: 26px; }
 
 .banner { display: flex; gap: 12px; align-items: center; background: var(--accent-soft); color: var(--accent-ink); border-radius: var(--r);
@@ -630,7 +631,7 @@ details.more summary { cursor: pointer; padding: 12px 16px; font-weight: 650; fo
 .car-stats { display: grid; gap: 6px; font-size: 12px; opacity: .92; }
 .car-stats b { font-size: 15px; margin-left: 8px; }
 .car-quick .q { font-size: 24px; }
-.car-quick .q.prim { background: #0b1a33; }
+.car-quick .q.prim { background: var(--brand); }
 .fuel-row { display: grid; grid-template-columns: 56px 1fr auto; gap: 10px; align-items: center; padding: 10px 16px; border-top: 1px solid var(--line); font-size: 13.5px; background: none; border-left: 0; border-right: 0; border-bottom: 0; width: 100%; text-align: left; }
 .fuel-row:first-child { border-top: 0; }
 .fuel-row .d { color: var(--ink-2); font-size: 12.5px; }
@@ -1093,7 +1094,7 @@ html.glass .trip-card .tc-n div { background: color-mix(in srgb, var(--bg) 55%, 
     <aside class="set-nav">
       <div class="set-nav-h"><h2>設定</h2><button class="x set-x" data-close="set" data-icon="x"></button></div>
       <div class="set-nav-b"><div class="set-group"><button class="set-item" data-pane="conn"><i style="background:#34c759" data-icon="cloud"></i><span class="lbl">連線與同步</span><span class="v" id="nv-conn"></span><span class="chev">›</span></button><button class="set-item" data-pane="ai"><i style="background:#5e5ce6" data-icon="sparkles"></i><span class="lbl">AI 辨識</span><span class="v" id="nv-ai"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="acc"><i style="background:#0a84ff" data-icon="bank"></i><span class="lbl">帳戶</span><span class="v" id="nv-acc"></span><span class="chev">›</span></button><button class="set-item" data-pane="cat"><i style="background:#ff9f0a" data-icon="tag"></i><span class="lbl">記帳分類</span><span class="v" id="nv-cat"></span><span class="chev">›</span></button><button class="set-item" data-pane="period"><i style="background:#ff375f" data-icon="calendar"></i><span class="lbl">記帳區間</span><span class="v" id="nv-period"></span><span class="chev">›</span></button><button class="set-item" data-pane="look"><i style="background:#af52de" data-icon="sparkles"></i><span class="lbl">外觀</span><span class="v" id="nv-look"></span><span class="chev">›</span></button></div><div class="set-group"><button class="set-item" data-pane="import"><i style="background:#30b0c7" data-icon="download"></i><span class="lbl">匯入資料</span><span class="v" id="nv-import"></span><span class="chev">›</span></button><button class="set-item" data-pane="offline"><i style="background:#8e8e93" data-icon="cloudOff"></i><span class="lbl">離線</span><span class="v" id="nv-offline"></span><span class="chev">›</span></button><button class="set-item" data-pane="about"><i style="background:#64748b" data-icon="info"></i><span class="lbl">其他</span><span class="v" id="nv-about"></span><span class="chev">›</span></button></div>
-        <div class="hint" style="text-align:center;margin:18px 0 0">AI 記帳 v4.0</div>
+        <div class="hint" style="text-align:center;margin:18px 0 0">AI 記帳 v4.0.1</div>
       </div>
     </aside>
     <section class="set-main">
